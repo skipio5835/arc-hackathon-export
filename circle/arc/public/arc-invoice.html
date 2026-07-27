@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ArcInvoice</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f7f8fb;
+        color: #17202a;
+        --ink: #17202a;
+        --muted: #647181;
+        --line: #dbe1e8;
+        --panel: #ffffff;
+        --soft: #f1f5f8;
+        --green: #11715f;
+        --green-dark: #0d5d50;
+        --cyan: #0b6f8f;
+        --amber: #99670c;
+        --red: #b42318;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(180deg, #eef7f3 0, rgba(238, 247, 243, 0) 260px),
+          var(--bg, #f7f8fb);
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        min-height: 40px;
+        border: 1px solid var(--green);
+        border-radius: 6px;
+        padding: 0 14px;
+        background: var(--green);
+        color: #ffffff;
+        font-weight: 720;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: #ffffff;
+        color: var(--green);
+      }
+
+      button.ghost {
+        border-color: #c5d1d9;
+        background: #ffffff;
+        color: #344253;
+      }
+
+      button.warn {
+        border-color: var(--amber);
+        background: #fff8e8;
+        color: #75500b;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.52;
+      }
+
+      a {
+        color: var(--cyan);
+        font-weight: 700;
+      }
+
+      main {
+        width: min(1240px, 100%);
+        margin: 0 auto;
+        padding: 24px;
+        display: grid;
+        gap: 16px;
+      }
+
+      header {
+        min-height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 16px;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+
+      .subtle {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .top-actions,
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .pill {
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #c7d8d2;
+        border-radius: 999px;
+        padding: 0 10px;
+        background: #f8fffc;
+        color: #245347;
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(320px, 0.95fr) minmax(420px, 1.35fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: 0 16px 34px rgba(23, 32, 42, 0.07);
+      }
+
+      .panel-head {
+        min-height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+        padding: 14px 16px;
+      }
+
+      .panel-body {
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: #536170;
+        font-size: 12px;
+        font-weight: 680;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid #c9d3dc;
+        border-radius: 6px;
+        padding: 9px 10px;
+        background: #ffffff;
+        color: var(--ink);
+      }
+
+      textarea {
+        min-height: 92px;
+        resize: vertical;
+      }
+
+      input[readonly] {
+        background: #f4f7fa;
+      }
+
+      .wide {
+        grid-column: 1 / -1;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        min-height: 76px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 12px;
+        display: grid;
+        align-content: center;
+        gap: 6px;
+      }
+
+      .metric span,
+      .receipt dt {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 680;
+      }
+
+      .metric strong,
+      .receipt dd {
+        margin: 0;
+        color: var(--ink);
+        font-size: 14px;
+        overflow-wrap: anywhere;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 660px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: middle;
+        font-size: 13px;
+      }
+
+      th {
+        color: #516070;
+        background: #f4f7fa;
+        font-weight: 760;
+      }
+
+      tr[data-selected="true"] {
+        background: #eefaf5;
+      }
+
+      .select-row {
+        min-height: 32px;
+        padding: 0 10px;
+      }
+
+      .status {
+        display: inline-flex;
+        min-height: 26px;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0 9px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .status.draft {
+        background: #eef2f6;
+        color: #415062;
+      }
+
+      .status.registered {
+        background: #e8f7fb;
+        color: #075c78;
+      }
+
+      .status.paid {
+        background: #e7f7ef;
+        color: #0d664f;
+      }
+
+      .status.cancelled {
+        background: #fff0ed;
+        color: var(--red);
+      }
+
+      .receipt {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .receipt div {
+        min-height: 68px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--soft);
+        padding: 10px;
+        display: grid;
+        align-content: center;
+        gap: 5px;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 8px;
+      }
+
+      .step {
+        min-height: 42px;
+        display: grid;
+        grid-template-columns: 22px minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        color: #435162;
+        font-size: 13px;
+      }
+
+      .dot {
+        width: 12px;
+        height: 12px;
+        border: 2px solid #aab7c3;
+        border-radius: 50%;
+        justify-self: center;
+      }
+
+      .step.done .dot {
+        border-color: var(--green);
+        background: var(--green);
+      }
+
+      #statusLine {
+        min-height: 22px;
+        color: #394858;
+        overflow-wrap: anywhere;
+      }
+
+      @media (max-width: 980px) {
+        .grid,
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 680px) {
+        main {
+          padding: 16px;
+        }
+
+        header,
+        .panel-head,
+        .top-actions,
+        .actions,
+        .fields,
+        .receipt {
+          display: grid;
+          grid-template-columns: 1fr;
+          align-items: stretch;
+        }
+
+        h1 {
+          font-size: 26px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>ArcInvoice</h1>
+          <p class="subtle">USDC invoices, onchain receipts, instant Arc settlement</p>
+        </div>
+        <div class="top-actions">
+          <span class="pill">Arc Testnet</span>
+          <button id="connect" class="secondary" type="button">Connect Wallet</button>
+        </div>
+      </header>
+
+      <section class="metrics" aria-label="Invoice metrics">
+        <div class="metric">
+          <span>Wallet</span>
+          <strong id="walletAddress">Not connected</strong>
+        </div>
+        <div class="metric">
+          <span>Native USDC</span>
+          <strong id="nativeBalance">-</strong>
+        </div>
+        <div class="metric">
+          <span>Contract</span>
+          <strong id="contractSummary">Not loaded</strong>
+        </div>
+        <div class="metric">
+          <span>Volume</span>
+          <strong id="paidVolume">0.00 USDC</strong>
+        </div>
+      </section>
+
+      <div class="grid">
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>New Invoice</h2>
+              <span class="pill">Quote</span>
+            </div>
+            <form id="invoiceForm" class="panel-body">
+              <div class="fields">
+                <label>
+                  Merchant
+                  <input id="merchantName" autocomplete="organization" value="Nexus Studio" />
+                </label>
+                <label>
+                  Customer
+                  <input id="customerName" autocomplete="name" value="Atlas Trading LLC" />
+                </label>
+                <label>
+                  Customer email
+                  <input id="customerEmail" autocomplete="email" value="ap@atlas.example" />
+                </label>
+                <label>
+                  Amount
+                  <input id="amount" inputmode="decimal" value="0.01" />
+                </label>
+                <label class="wide">
+                  Merchant wallet
+                  <input id="merchantWallet" />
+                </label>
+                <label class="wide">
+                  Description
+                  <textarea id="description">Design sprint deposit for July launch assets</textarea>
+                </label>
+                <label>
+                  Due date
+                  <input id="dueDate" type="date" />
+                </label>
+                <label>
+                  Settlement asset
+                  <input readonly value="Native USDC on Arc" />
+                </label>
+              </div>
+              <div class="actions">
+                <button id="createInvoice" type="submit">Create Invoice</button>
+                <button id="refreshInvoices" class="ghost" type="button">Refresh</button>
+              </div>
+              <p id="statusLine"></p>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Arc Contract</h2>
+              <span class="pill">Receipt rail</span>
+            </div>
+            <div class="panel-body">
+              <label>
+                Contract address
+                <input id="contractAddress" placeholder="0x..." />
+              </label>
+              <div class="actions">
+                <button id="deployContract" type="button">Deploy</button>
+                <button id="saveContract" class="secondary" type="button">Load</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Arc Quote</h2>
+              <span id="quoteStatus" class="pill">none</span>
+            </div>
+            <div class="panel-body">
+              <div class="fields">
+                <label class="wide">
+                  Quote title
+                  <input id="quoteTitle" />
+                </label>
+                <label>
+                  Buyer
+                  <input id="quoteBuyer" />
+                </label>
+                <label>
+                  Amount
+                  <input id="quoteAmount" inputmode="decimal" />
+                </label>
+                <label class="wide">
+                  Metadata URI
+                  <input id="quoteMetadataURI" />
+                </label>
+                <label class="wide">
+                  Acceptance URI
+                  <input id="quoteAcceptanceURI" />
+                </label>
+                <label class="wide">
+                  Settlement to
+                  <input id="quoteSettlementTo" />
+                </label>
+              </div>
+              <div class="actions">
+                <button id="createQuote" type="button" disabled>Create Quote</button>
+                <button id="acceptQuote" class="warn" type="button" disabled>Accept Quote</button>
+                <button id="settleQuote" class="secondary" type="button" disabled>Settle Quote</button>
+                <button id="cancelQuote" class="ghost" type="button" disabled>Cancel Quote</button>
+                <button id="refreshQuote" class="ghost" type="button" disabled>Refresh Quote</button>
+              </div>
+              <code id="quoteId">-</code>
+            </div>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Invoices</h2>
+              <span id="invoiceCount" class="pill">0 open</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Invoice</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="invoiceRows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Selected Receipt</h2>
+              <span id="selectedStatus" class="status draft">draft</span>
+            </div>
+            <div class="panel-body">
+              <dl id="receipt" class="receipt"></dl>
+              <div class="actions">
+                <button id="registerInvoice" type="button" disabled>Register on Arc</button>
+                <button id="payInvoice" class="warn" type="button" disabled>Pay USDC</button>
+                <button id="cancelInvoice" class="ghost" type="button" disabled>Cancel Invoice</button>
+                <button id="copyLink" class="ghost" type="button" disabled>Copy Link</button>
+              </div>
+              <div class="timeline">
+                <div id="stepDraft" class="step done"><span class="dot"></span><span>Backend invoice record</span></div>
+                <div id="stepRegistered" class="step"><span class="dot"></span><span>Arc contract event</span></div>
+                <div id="stepPaid" class="step"><span class="dot"></span><span>USDC settlement receipt</span></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/circle/arc/public/arc-invoice.bundle.js"></script>
+  </body>
+</html>

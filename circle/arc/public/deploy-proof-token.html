@@ -1,0 +1,338 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Proof Token Deployer</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f7f8fb;
+        color: #18202a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 32px;
+      }
+
+      main {
+        width: min(820px, 100%);
+        display: grid;
+        gap: 18px;
+      }
+
+      h1,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 32px;
+        line-height: 1.1;
+        font-weight: 720;
+      }
+
+      .panel {
+        background: #ffffff;
+        border: 1px solid #d8dee8;
+        border-radius: 8px;
+        padding: 20px;
+        display: grid;
+        gap: 14px;
+        box-shadow: 0 16px 42px rgba(26, 36, 52, 0.08);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #586170;
+        text-transform: uppercase;
+      }
+
+      input {
+        width: 100%;
+        height: 42px;
+        border: 1px solid #cad2dd;
+        border-radius: 6px;
+        padding: 0 12px;
+        font: inherit;
+        background: #fbfcfe;
+        color: #18202a;
+      }
+
+      button {
+        height: 44px;
+        border: 0;
+        border-radius: 6px;
+        padding: 0 16px;
+        font: inherit;
+        font-weight: 700;
+        color: #ffffff;
+        background: #145c68;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        color: #18202a;
+        background: #e8edf3;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .status,
+      pre {
+        min-height: 44px;
+        border: 1px solid #d8dee8;
+        border-radius: 6px;
+        padding: 12px;
+        background: #fbfcfe;
+        color: #293442;
+      }
+
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 13px;
+      }
+
+      a {
+        color: #145c68;
+      }
+
+      @media (max-width: 680px) {
+        body {
+          padding: 18px;
+          place-items: start;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 26px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Proof Token</h1>
+        <p>Custom ERC-20 deployment on Arc Testnet</p>
+      </header>
+
+      <section class="panel">
+        <div class="grid">
+          <div class="field">
+            <label for="expectedAccount">Expected owner</label>
+            <input id="expectedAccount" value="0x0000000000000000000000000000000000000000" />
+          </div>
+          <div class="field">
+            <label for="tokenName">Token name</label>
+            <input id="tokenName" value="arcproof" />
+          </div>
+          <div class="field">
+            <label for="tokenSymbol">Token symbol</label>
+            <input id="tokenSymbol" value="ARCP" />
+          </div>
+          <div class="field">
+            <label for="initialSupply">Initial supply</label>
+            <input id="initialSupply" value="20260609" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="connect">Connect</button>
+          <button id="deploy" disabled>Deploy</button>
+          <button id="copy" class="secondary" disabled>Copy address</button>
+        </div>
+
+        <div id="status" class="status">Ready.</div>
+        <pre id="result"></pre>
+      </section>
+    </main>
+
+    <script type="module">
+      import {
+        BrowserProvider,
+        ContractFactory,
+        formatUnits,
+        parseUnits,
+      } from "/node_modules/ethers/dist/ethers.min.js";
+
+      const ARC_TESTNET = {
+        chainId: "0x4cef52",
+        chainName: "Arc Testnet",
+        nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+        rpcUrls: ["https://rpc.testnet.arc.network"],
+        blockExplorerUrls: ["https://testnet.arcscan.app"],
+      };
+
+      const state = {
+        provider: null,
+        signer: null,
+        account: null,
+        deployedAddress: "",
+      };
+
+      const els = {
+        connect: document.querySelector("#connect"),
+        deploy: document.querySelector("#deploy"),
+        copy: document.querySelector("#copy"),
+        status: document.querySelector("#status"),
+        result: document.querySelector("#result"),
+        expectedAccount: document.querySelector("#expectedAccount"),
+        tokenName: document.querySelector("#tokenName"),
+        tokenSymbol: document.querySelector("#tokenSymbol"),
+        initialSupply: document.querySelector("#initialSupply"),
+      };
+
+      function setStatus(message) {
+        els.status.textContent = message;
+      }
+
+      function show(value) {
+        els.result.textContent = JSON.stringify(
+          value,
+          (_key, val) => (typeof val === "bigint" ? val.toString() : val),
+          2,
+        );
+      }
+
+      async function ensureArcTestnet() {
+        const chainId = await window.ethereum.request({ method: "eth_chainId" });
+        if (chainId === ARC_TESTNET.chainId) return;
+
+        try {
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: ARC_TESTNET.chainId }],
+          });
+        } catch (error) {
+          if (error.code !== 4902) throw error;
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [ARC_TESTNET],
+          });
+        }
+      }
+
+      function assertExpectedAccount(account) {
+        const expected = els.expectedAccount.value.trim().toLowerCase();
+        if (account.toLowerCase() !== expected) {
+          throw new Error(`Connected account must be ${els.expectedAccount.value.trim()}`);
+        }
+      }
+
+      els.connect.addEventListener("click", async () => {
+        try {
+          if (!window.ethereum) throw new Error("MetaMask is not available.");
+          setStatus("Connecting...");
+          await ensureArcTestnet();
+          const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+          const account = accounts[0];
+          assertExpectedAccount(account);
+
+          state.provider = new BrowserProvider(window.ethereum);
+          state.signer = await state.provider.getSigner();
+          state.account = account;
+          els.deploy.disabled = false;
+          setStatus(`Connected: ${account}`);
+        } catch (error) {
+          els.deploy.disabled = true;
+          setStatus(error.message ?? String(error));
+        }
+      });
+
+      els.deploy.addEventListener("click", async () => {
+        try {
+          els.deploy.disabled = true;
+          setStatus("Loading artifact...");
+          const artifact = await fetch("/circle/arc/public/artifacts/ProofToken.json", { cache: "no-store" }).then((res) =>
+            res.json(),
+          );
+
+          const tokenName = els.tokenName.value.trim();
+          const tokenSymbol = els.tokenSymbol.value.trim();
+          if (!tokenName || !tokenSymbol) throw new Error("Token name and symbol are required.");
+
+          const supply = parseUnits(els.initialSupply.value.trim(), 18);
+          setStatus("Waiting for MetaMask confirmation...");
+          const factory = new ContractFactory(artifact.abi, artifact.bytecode, state.signer);
+          const contract = await factory.deploy(tokenName, tokenSymbol, supply);
+
+          show({ deploymentTransaction: contract.deploymentTransaction().hash });
+          setStatus("Waiting for deployment...");
+          await contract.waitForDeployment();
+
+          const address = await contract.getAddress();
+          state.deployedAddress = address;
+          els.copy.disabled = false;
+
+          const [name, symbol, decimals, totalSupply, balance, owner] = await Promise.all([
+            contract.name(),
+            contract.symbol(),
+            contract.decimals(),
+            contract.totalSupply(),
+            contract.balanceOf(state.account),
+            contract.owner(),
+          ]);
+
+          show({
+            contractAddress: address,
+            explorer: `https://testnet.arcscan.app/address/${address}`,
+            deployTx: contract.deploymentTransaction().hash,
+            deployTxExplorer: `https://testnet.arcscan.app/tx/${contract.deploymentTransaction().hash}`,
+            owner,
+            name,
+            symbol,
+            decimals: Number(decimals),
+            totalSupply: formatUnits(totalSupply, decimals),
+            ownerBalance: formatUnits(balance, decimals),
+          });
+          setStatus("Deployed.");
+        } catch (error) {
+          els.deploy.disabled = false;
+          setStatus(error.message ?? String(error));
+        }
+      });
+
+      els.copy.addEventListener("click", async () => {
+        await navigator.clipboard.writeText(state.deployedAddress);
+        setStatus("Address copied.");
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Raw CCTP</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f5f7f8;
+        color: #192126;
+        --line: #d8e0e4;
+        --panel: #ffffff;
+        --soft: #f0f5f6;
+        --accent: #136f63;
+        --muted: #5b6871;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(180deg, #edf7f2 0, rgba(237, 247, 242, 0) 280px),
+          #f5f7f8;
+      }
+
+      main {
+        width: min(1120px, 100%);
+        margin: 0 auto;
+        padding: 24px;
+        display: grid;
+        gap: 16px;
+      }
+
+      header {
+        min-height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      h1,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      p {
+        color: var(--muted);
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        min-height: 42px;
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        padding: 0 14px;
+        background: var(--accent);
+        color: #ffffff;
+        font-weight: 720;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: #ffffff;
+        color: var(--accent);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.54;
+      }
+
+      input,
+      select {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid #c8d3d8;
+        border-radius: 6px;
+        padding: 9px 10px;
+        background: #ffffff;
+        color: #192126;
+      }
+
+      input[readonly] {
+        background: var(--soft);
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 680;
+      }
+
+      a {
+        color: var(--accent);
+        font-weight: 760;
+      }
+
+      code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .panel,
+      .metric,
+      #feesBox div,
+      #receipt div {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .panel {
+        padding: 16px;
+        box-shadow: 0 14px 30px rgba(25, 33, 38, 0.07);
+      }
+
+      .metric,
+      #feesBox div,
+      #receipt div {
+        min-height: 74px;
+        padding: 12px;
+      }
+
+      .metric span,
+      #feesBox strong,
+      #receipt strong {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .metric strong,
+      #feesBox span,
+      #receipt span {
+        display: block;
+        overflow-wrap: anywhere;
+        font-size: 14px;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      #feesBox,
+      #receipt {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      #status {
+        min-height: 22px;
+        color: #34434b;
+        overflow-wrap: anywhere;
+      }
+
+      @media (max-width: 860px) {
+        main {
+          padding: 18px;
+        }
+
+        header,
+        .grid,
+        .metrics,
+        #feesBox,
+        #receipt {
+          display: grid;
+          grid-template-columns: 1fr;
+          align-items: stretch;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Raw CCTP</h1>
+          <p>Arc custom bridge burn, Iris attestation, destination mint</p>
+        </div>
+        <button id="connect" class="secondary" type="button">Connect MetaMask</button>
+      </header>
+
+      <section class="panel">
+        <div class="grid">
+          <label>
+            Sender
+            <input id="sender" readonly value="Not connected" />
+          </label>
+          <label>
+            Expected account
+            <input id="expectedAccount" />
+          </label>
+          <label>
+            Source
+            <input readonly value="Arc_Testnet / domain 26" />
+          </label>
+          <label>
+            Destination
+            <select id="destination">
+              <option selected>Ethereum_Sepolia</option>
+              <option>Base_Sepolia</option>
+            </select>
+          </label>
+          <label>
+            Recipient
+            <input id="recipient" />
+          </label>
+          <label>
+            Amount
+            <input id="amount" inputmode="decimal" />
+          </label>
+          <label>
+            Speed
+            <select id="speed">
+              <option selected>STANDARD</option>
+              <option>FAST</option>
+            </select>
+          </label>
+          <label>
+            Max fee
+            <input id="maxFee" inputmode="decimal" />
+          </label>
+          <label>
+            Bridge burn tx hash
+            <input id="burnTxHash" placeholder="0x..." />
+          </label>
+          <label>
+            CCTP contracts
+            <input readonly value="Bridge contract / MessageTransmitterV2" />
+          </label>
+        </div>
+      </section>
+
+      <section class="metrics">
+        <div class="metric">
+          <span>Arc ERC-20 USDC</span>
+          <strong id="sourceUsdc">-</strong>
+        </div>
+        <div class="metric">
+          <span>Arc native USDC</span>
+          <strong id="sourceNative">-</strong>
+        </div>
+        <div class="metric">
+          <span>Allowance</span>
+          <strong id="allowance">-</strong>
+        </div>
+        <div class="metric">
+          <span>Destination USDC</span>
+          <strong id="destUsdc">-</strong>
+        </div>
+        <div class="metric">
+          <span>Destination gas</span>
+          <strong id="destNative">-</strong>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="actions">
+          <button id="refresh" class="secondary" type="button" disabled>Refresh</button>
+          <button id="fetchFees" class="secondary" type="button" disabled>Fetch Fee</button>
+          <button id="approve" type="button" disabled>Approve</button>
+          <button id="burn" type="button" disabled>Bridge Burn</button>
+          <button id="poll" class="secondary" type="button" disabled>Poll Iris</button>
+          <button id="mint" type="button" disabled>Mint</button>
+        </div>
+        <p id="status"></p>
+      </section>
+
+      <section class="panel">
+        <div id="feesBox">
+          <div><strong>fees</strong><span>-</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div id="receipt">
+          <div><strong>source</strong><span>-</span></div>
+          <div><strong>destination</strong><span>-</span></div>
+          <div><strong>mint tx</strong><span>-</span></div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/circle/arc/public/raw-cctp.bundle.js"></script>
+  </body>
+</html>

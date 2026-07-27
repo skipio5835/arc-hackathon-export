@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ArcSubscription</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f7f8fb;
+        color: #17202a;
+        --ink: #17202a;
+        --muted: #647181;
+        --line: #dbe1e8;
+        --panel: #ffffff;
+        --soft: #f1f5f8;
+        --green: #11715f;
+        --cyan: #0b6f8f;
+        --amber: #99670c;
+        --red: #b42318;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(180deg, #eef7f3 0, rgba(238, 247, 243, 0) 260px),
+          #f7f8fb;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        min-height: 40px;
+        border: 1px solid var(--green);
+        border-radius: 6px;
+        padding: 0 14px;
+        background: var(--green);
+        color: #ffffff;
+        font-weight: 720;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: #ffffff;
+        color: var(--green);
+      }
+
+      button.warn {
+        border-color: var(--amber);
+        background: #fff8e8;
+        color: #75500b;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.52;
+      }
+
+      a {
+        color: var(--cyan);
+        font-weight: 700;
+      }
+
+      main {
+        width: min(1180px, 100%);
+        margin: 0 auto;
+        padding: 24px;
+        display: grid;
+        gap: 16px;
+      }
+
+      header {
+        min-height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 16px;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+
+      .subtle {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .top-actions,
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .pill {
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #c7d8d2;
+        border-radius: 999px;
+        padding: 0 10px;
+        background: #f8fffc;
+        color: #245347;
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(320px, 0.95fr) minmax(420px, 1.25fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: 0 16px 34px rgba(23, 32, 42, 0.07);
+      }
+
+      .panel-head {
+        min-height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+        padding: 14px 16px;
+      }
+
+      .panel-body {
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: #536170;
+        font-size: 12px;
+        font-weight: 680;
+      }
+
+      input {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid #c9d3dc;
+        border-radius: 6px;
+        padding: 9px 10px;
+        background: #ffffff;
+        color: var(--ink);
+      }
+
+      .wide {
+        grid-column: 1 / -1;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        min-height: 76px;
+        border: 1px solid #dce4eb;
+        border-radius: 8px;
+        background: var(--soft);
+        padding: 12px;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+
+      .metric strong {
+        display: block;
+        overflow-wrap: anywhere;
+        font-size: 14px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      th {
+        color: #526070;
+        font-size: 12px;
+      }
+
+      tr[data-selected="true"] {
+        background: #f0faf6;
+      }
+
+      .status {
+        display: inline-flex;
+        min-height: 26px;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0 9px;
+        font-size: 12px;
+        font-weight: 760;
+        background: #eef2f5;
+        color: #435060;
+      }
+
+      .status.created {
+        background: #e8f7f0;
+        color: #0f684e;
+      }
+
+      .status.subscribed {
+        background: #e8f5ff;
+        color: #0a6183;
+      }
+
+      .status.cancelled {
+        background: #fff6e6;
+        color: #80560b;
+      }
+
+      dl {
+        margin: 0;
+        display: grid;
+        gap: 8px;
+      }
+
+      dl div {
+        display: grid;
+        grid-template-columns: 120px minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      dt {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+        font-size: 13px;
+      }
+
+      code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+      }
+
+      #statusLine {
+        min-height: 22px;
+        color: #354253;
+        overflow-wrap: anywhere;
+      }
+
+      @media (max-width: 820px) {
+        main {
+          padding: 18px;
+        }
+
+        header,
+        .grid,
+        .fields,
+        .metrics {
+          grid-template-columns: 1fr;
+          display: grid;
+          align-items: stretch;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>ArcSubscription</h1>
+          <p class="subtle">Native USDC subscription plans on Arc Testnet</p>
+        </div>
+        <div class="top-actions">
+          <span id="walletAddress" class="pill">Not connected</span>
+          <button id="connect" type="button">Connect MetaMask</button>
+        </div>
+      </header>
+
+      <section class="metrics">
+        <div class="metric">
+          <span>Native USDC</span>
+          <strong id="nativeBalance">-</strong>
+        </div>
+        <div class="metric">
+          <span>Selected status</span>
+          <strong><span id="selectedStatus" class="status draft">draft</span></strong>
+        </div>
+        <div class="metric">
+          <span>Network</span>
+          <strong>Arc Testnet</strong>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Contract</h2>
+              <button id="deployContract" class="secondary" type="button">Deploy</button>
+            </div>
+            <div class="panel-body">
+              <label>
+                ArcSubscription contract
+                <input id="contractAddress" placeholder="Deploy or paste contract address" />
+              </label>
+              <div class="actions">
+                <button id="saveContract" class="secondary" type="button">Save Contract</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>New Plan</h2>
+              <span class="pill">native USDC</span>
+            </div>
+            <div class="panel-body">
+              <div class="fields">
+                <label class="wide">
+                  Merchant
+                  <input id="merchant" />
+                </label>
+                <label>
+                  Price
+                  <input id="price" inputmode="decimal" />
+                </label>
+                <label>
+                  Period days
+                  <input id="periodDays" inputmode="numeric" />
+                </label>
+                <label>
+                  Cycles
+                  <input id="cycles" inputmode="numeric" />
+                </label>
+                <label class="wide">
+                  Reference
+                  <input id="reference" />
+                </label>
+              </div>
+              <div class="actions">
+                <button id="createDraft" type="button">Create Draft</button>
+                <button id="createPlan" type="button" disabled>Create Plan</button>
+                <button id="subscribe" type="button" disabled>Subscribe</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Subscriptions</h2>
+              <button id="refreshSelected" class="secondary" type="button" disabled>Refresh Selected</button>
+            </div>
+            <div class="panel-body">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Reference</th>
+                    <th>Price</th>
+                    <th>Period</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="subscriptionRows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Lifecycle</h2>
+              <button id="cancelSubscription" class="warn" type="button" disabled>Cancel</button>
+            </div>
+            <div class="panel-body">
+              <dl id="receipt"></dl>
+              <p id="statusLine"></p>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./arc-subscription.bundle.js"></script>
+  </body>
+</html>

@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ArcRefundable Deposit</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f8faf9;
+        color: #17211d;
+        --ink: #17211d;
+        --muted: #62706a;
+        --line: #d9e2dd;
+        --panel: #ffffff;
+        --soft: #f1f6f3;
+        --green: #14624f;
+        --blue: #126981;
+        --amber: #8a620d;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(180deg, #edf7f2 0, rgba(237, 247, 242, 0) 260px),
+          #f8faf9;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        min-height: 40px;
+        border: 1px solid var(--green);
+        border-radius: 6px;
+        padding: 0 14px;
+        background: var(--green);
+        color: #ffffff;
+        font-weight: 720;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: #ffffff;
+        color: var(--green);
+      }
+
+      button.warn {
+        border-color: var(--amber);
+        background: #fff8e8;
+        color: #75500b;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.52;
+      }
+
+      a {
+        color: var(--blue);
+        font-weight: 700;
+      }
+
+      main {
+        width: min(1080px, 100%);
+        margin: 0 auto;
+        padding: 24px;
+        display: grid;
+        gap: 16px;
+      }
+
+      header {
+        min-height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 30px;
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 16px;
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+
+      .subtle {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .top-actions,
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .pill {
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #c9d9cf;
+        border-radius: 999px;
+        padding: 0 10px;
+        background: #fbfffb;
+        color: #285442;
+        font-size: 12px;
+        font-weight: 760;
+        overflow-wrap: anywhere;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(320px, 0.92fr) minmax(420px, 1.2fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .stack {
+        display: grid;
+        gap: 16px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: 0 16px 34px rgba(23, 33, 29, 0.07);
+      }
+
+      .panel-head {
+        min-height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+        padding: 14px 16px;
+      }
+
+      .panel-body {
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: #54625c;
+        font-size: 12px;
+        font-weight: 680;
+      }
+
+      input {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid #c9d4cc;
+        border-radius: 6px;
+        padding: 9px 10px;
+        background: #ffffff;
+        color: var(--ink);
+      }
+
+      .wide {
+        grid-column: 1 / -1;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        min-height: 76px;
+        border: 1px solid #dde6df;
+        border-radius: 8px;
+        background: var(--soft);
+        padding: 12px;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+
+      .metric strong {
+        display: block;
+        overflow-wrap: anywhere;
+        font-size: 14px;
+      }
+
+      code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+
+      #statusLine {
+        min-height: 22px;
+        color: #35423b;
+        overflow-wrap: anywhere;
+      }
+
+      @media (max-width: 900px) {
+        main {
+          padding: 18px;
+        }
+
+        header,
+        .grid,
+        .fields,
+        .metrics {
+          grid-template-columns: 1fr;
+          display: grid;
+          align-items: stretch;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>ArcRefundable Deposit</h1>
+          <p class="subtle">Native USDC deposit hold, refund, and forfeit receipts</p>
+        </div>
+        <div class="top-actions">
+          <span id="walletAddress" class="pill">Not connected</span>
+          <button id="connect" type="button">Connect MetaMask</button>
+        </div>
+      </header>
+
+      <section class="metrics">
+        <div class="metric">
+          <span>Native USDC</span>
+          <strong id="nativeBalance">-</strong>
+        </div>
+        <div class="metric">
+          <span>Deposit</span>
+          <strong id="depositStatus">not created</strong>
+        </div>
+        <div class="metric">
+          <span>Value</span>
+          <strong id="valueStatus">0 USDC</strong>
+        </div>
+        <div class="metric">
+          <span>Beneficiary</span>
+          <strong id="beneficiaryAddress">-</strong>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Contract</h2>
+              <button id="deployContract" class="secondary" type="button">Deploy</button>
+            </div>
+            <div class="panel-body">
+              <label>
+                ArcRefundableDeposit contract
+                <input id="contractAddress" placeholder="Deploy or paste contract address" />
+              </label>
+              <div class="actions">
+                <button id="saveContract" class="secondary" type="button">Save Contract</button>
+                <button id="refresh" class="secondary" type="button" disabled>Refresh</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Deposit</h2>
+              <span class="pill">native USDC</span>
+            </div>
+            <div class="panel-body">
+              <div class="fields">
+                <label class="wide">
+                  Label
+                  <input id="label" />
+                </label>
+                <label>
+                  Beneficiary
+                  <input id="beneficiary" />
+                </label>
+                <label>
+                  Amount
+                  <input id="amount" inputmode="decimal" />
+                </label>
+                <label class="wide">
+                  Metadata URI
+                  <input id="metadataURI" />
+                </label>
+              </div>
+              <div class="actions">
+                <button id="createDeposit" type="button" disabled>Create Deposit</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Resolve</h2>
+              <span class="pill">refund, forfeit</span>
+            </div>
+            <div class="panel-body">
+              <div class="fields">
+                <label class="wide">
+                  Resolution URI
+                  <input id="resolutionURI" />
+                </label>
+                <label>
+                  Refund to
+                  <input id="refundTo" />
+                </label>
+                <label>
+                  Forfeit to
+                  <input id="forfeitTo" />
+                </label>
+              </div>
+              <div class="actions">
+                <button id="refundDeposit" type="button" disabled>Refund Deposit</button>
+                <button id="forfeitDeposit" class="warn" type="button" disabled>Forfeit Deposit</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Receipt</h2>
+              <span class="pill">deposit id</span>
+            </div>
+            <div class="panel-body">
+              <code id="depositId">-</code>
+              <p>Payer: <strong id="payerAddress">-</strong></p>
+              <p id="statusLine"></p>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="./arc-refundable-deposit.bundle.js"></script>
+  </body>
+</html>
