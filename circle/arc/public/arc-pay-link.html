@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ArcPayLink</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, system-ui, sans-serif; background: #f6f8fb; color: #17202a; }
+      * { box-sizing: border-box; } body { margin: 0; } main { width: min(900px, 100%); margin: auto; padding: 24px; display: grid; gap: 16px; }
+      header, .actions, .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; } header { justify-content: space-between; }
+      h1, h2, p { margin: 0; } h1 { font-size: 30px; } h2 { font-size: 16px; } .muted { color: #647181; font-size: 13px; }
+      .panel { background: white; border: 1px solid #dbe1e8; border-radius: 8px; padding: 18px; display: grid; gap: 14px; }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } label { display: grid; gap: 6px; color: #526170; font-size: 13px; font-weight: 700; }
+      input { width: 100%; min-height: 40px; border: 1px solid #cbd5df; border-radius: 6px; padding: 0 10px; background: #fff; }
+      button { min-height: 40px; border: 1px solid #11715f; border-radius: 6px; padding: 0 14px; background: #11715f; color: white; font-weight: 700; cursor: pointer; }
+      button.secondary { background: white; color: #11715f; } button.warn { background: #fff8e8; border-color: #99670c; color: #75500b; } button:disabled { opacity: .5; cursor: not-allowed; }
+      code, pre { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; } pre { margin: 0; white-space: pre-wrap; word-break: break-word; background: #f1f5f8; padding: 12px; border-radius: 6px; min-height: 90px; }
+      a { color: #0b6f8f; font-weight: 700; } @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } main { padding: 16px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header><div><h1>ArcPayLink</h1><p class="muted">Shareable native-USDC payment links on Arc Testnet</p></div><button id="connect">Connect MetaMask</button></header>
+      <section class="panel"><div class="row"><strong id="wallet">Not connected</strong><span class="muted" id="balance">-</span></div>
+        <label>ArcPayLink contract<input id="contract" placeholder="0x..." /></label><div class="actions"><button class="secondary" id="save">Save address</button><button id="deploy">Deploy new</button></div></section>
+      <section class="panel"><h2>Create or open a payment link</h2><div class="grid"><label>Link ID<input id="linkId" /></label><label>Amount (USDC)<input id="amount" inputmode="decimal" /></label><label>Expires at<input id="expiry" type="datetime-local" /></label><label>Metadata URI<input id="metadata" /></label></div><div class="actions"><button id="create">Create link</button><button class="secondary" id="load">Load link</button><button id="pay">Pay link</button><button class="warn" id="cancel">Cancel link</button></div></section>
+      <section class="panel"><h2>Status</h2><p id="status" class="muted">Connect a wallet or load an existing link.</p><pre id="result">No link loaded.</pre></section>
+    </main>
+    <script type="module" src="./arc-pay-link.bundle.js"></script>
+  </body>
+</html>

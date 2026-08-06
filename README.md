@@ -8,7 +8,8 @@ and product-flow contracts with MetaMask-signed transactions.
 - `circle/arc/contracts`: Solidity contracts for invoice, escrow, marketplace,
   subscription, membership, savings, airdrop, bounty, milestone, expense,
   events, preorder, payroll, reward, coupon, referral, cashback, auction,
-  rental, warranty, support desk, access, and related flows.
+  rental, warranty, support desk, access, payment links, revenue splitting,
+  usage billing, streaming payroll, refundable payments, and related flows.
 - `circle/arc/src`: TypeScript browser clients for Circle App Kit, CCTP, token
   transfers, and Arc contract UIs.
 - `circle/arc/public`: Local HTML tools and prebuilt browser bundles.
@@ -38,6 +39,8 @@ npm.cmd run cycle:today
 npm.cmd run cycle:combo
 npm.cmd run build-arc-invoice
 npm.cmd run build-arc-marketplace
+npm.cmd run build-arc-pay-link
+npm.cmd run build-arc-refundable-payment
 npm.cmd run typecheck
 ```
 
