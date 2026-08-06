@@ -5,6 +5,11 @@ import solc from "solc";
 const root = process.cwd();
 const contractsToCompile = [
   { sourceName: "contracts/ArcInvoice.sol", filePath: "circle/arc/contracts/ArcInvoice.sol", name: "ArcInvoice" },
+  { sourceName: "contracts/ArcPayLink.sol", filePath: "circle/arc/contracts/ArcPayLink.sol", name: "ArcPayLink" },
+  { sourceName: "contracts/ArcRevenueSplitter.sol", filePath: "circle/arc/contracts/ArcRevenueSplitter.sol", name: "ArcRevenueSplitter" },
+  { sourceName: "contracts/ArcUsageBilling.sol", filePath: "circle/arc/contracts/ArcUsageBilling.sol", name: "ArcUsageBilling" },
+  { sourceName: "contracts/ArcStreamingPayroll.sol", filePath: "circle/arc/contracts/ArcStreamingPayroll.sol", name: "ArcStreamingPayroll" },
+  { sourceName: "contracts/ArcRefundablePayment.sol", filePath: "circle/arc/contracts/ArcRefundablePayment.sol", name: "ArcRefundablePayment" },
   { sourceName: "contracts/ArcEscrow.sol", filePath: "circle/arc/contracts/ArcEscrow.sol", name: "ArcEscrow" },
   {
     sourceName: "contracts/ArcSubscription.sol",
