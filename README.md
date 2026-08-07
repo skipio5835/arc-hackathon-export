@@ -9,7 +9,8 @@ and product-flow contracts with MetaMask-signed transactions.
   subscription, membership, savings, airdrop, bounty, milestone, expense,
   events, preorder, payroll, reward, coupon, referral, cashback, auction,
   rental, warranty, support desk, access, payment links, revenue splitting,
-  usage billing, streaming payroll, refundable payments, and related flows.
+  usage billing, streaming payroll, refundable payments, treasury operations,
+  merchant settlement, cross-chain routing, stablecoin FX, and related flows.
 - `circle/arc/src`: TypeScript browser clients for Circle App Kit, CCTP, token
   transfers, and Arc contract UIs.
 - `circle/arc/public`: Local HTML tools and prebuilt browser bundles.
@@ -41,6 +42,10 @@ npm.cmd run build-arc-invoice
 npm.cmd run build-arc-marketplace
 npm.cmd run build-arc-pay-link
 npm.cmd run build-arc-refundable-payment
+npm.cmd run build-arc-treasury-console
+npm.cmd run build-arc-merchant-settlement
+npm.cmd run build-arc-crosschain-router
+npm.cmd run build-arc-stablecoin-fx
 npm.cmd run typecheck
 ```
 
