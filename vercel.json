@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    { "source": "/circle-api/:path*", "destination": "/api/circle-api/:path*" },
+    { "source": "/circle-iris/:path*", "destination": "/api/circle-iris/:path*" },
+    { "source": "/circle-iris-sandbox/:path*", "destination": "/api/circle-iris-sandbox/:path*" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import {
   parseUnits,
 } from "viem";
 import type { Address, EIP1193Provider, Hash } from "viem";
+import { ARC_TESTNET, ARC_TESTNET_CHAIN } from "./arc-network";
 
 declare global {
   interface Window {
@@ -16,20 +17,8 @@ declare global {
   }
 }
 
-const arc = {
-  id: 5042002,
-  name: "Arc Testnet",
-  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
-  rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } },
-  blockExplorers: { default: { name: "ArcScan", url: "https://testnet.arcscan.app" } },
-} as const;
-
-const chainId = "0x4cef52";
-const tokens = {
-  USDC: { address: "0x3600000000000000000000000000000000000000" as Address, decimals: 6 },
-  EURC: { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a" as Address, decimals: 6 },
-  USYC: { address: "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C" as Address, decimals: 6 },
-} as const;
+const arc = ARC_TESTNET_CHAIN;
+const tokens = ARC_TESTNET.tokens;
 const erc20Abi = [
   { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ type: "uint256" }] },
   { type: "function", name: "transfer", stateMutability: "nonpayable", inputs: [{ name: "to", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ type: "bool" }] },
@@ -60,21 +49,21 @@ const activityKey = "ArcTreasuryConsole.activity.v1";
 
 function setStatus(message: string, hash?: Hash): void {
   el.status.innerHTML = hash
-    ? `${message} <a href="https://testnet.arcscan.app/tx/${hash}" target="_blank" rel="noreferrer">View on ArcScan</a>`
+    ? `${message} <a href="${ARC_TESTNET.explorerUrl}/tx/${hash}" target="_blank" rel="noreferrer">View on ArcScan</a>`
     : message;
 }
 
 function renderActivity(): void {
   const rows = JSON.parse(localStorage.getItem(activityKey) ?? "[]") as Activity[];
   el.activity.innerHTML = rows.length
-    ? rows.map((row) => `<li><strong>${row.token} ${row.amount}</strong> to <code>${row.recipient}</code><br><a href="https://testnet.arcscan.app/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><span>${new Date(row.createdAt).toLocaleString()}</span></li>`).join("")
+    ? rows.map((row) => `<li><strong>${row.token} ${row.amount}</strong> to <code>${row.recipient}</code><br><a href="${ARC_TESTNET.explorerUrl}/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><span>${new Date(row.createdAt).toLocaleString()}</span></li>`).join("")
     : "<li class=\"empty\">No local transfers recorded yet.</li>";
 }
 
 async function connect(): Promise<void> {
   provider = window.ethereum ?? null;
   if (!provider) throw new Error("MetaMask was not found.");
-  await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId }] });
+  await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_TESTNET.chainIdHex }] });
   const accounts = await provider.request({ method: "eth_requestAccounts" }) as string[];
   account = accounts[0] as Address;
   wallet = createWalletClient({ account, chain: arc, transport: custom(provider) });

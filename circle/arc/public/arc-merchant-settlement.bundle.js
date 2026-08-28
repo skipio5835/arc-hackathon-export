@@ -23934,12 +23934,43 @@ init_formatEther();
 init_formatGwei();
 init_formatUnits();
 
-// circle/arc/src/arc-merchant-settlement.ts
-var arc = { id: 5042002, name: "Arc Testnet", nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } }, blockExplorers: { default: { name: "ArcScan", url: "https://testnet.arcscan.app" } } };
-var tokens = {
-  USDC: { address: "0x3600000000000000000000000000000000000000", decimals: 6 },
-  EURC: { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", decimals: 6 }
+// circle/arc/src/arc-network.ts
+init_browser_buffer_global();
+var ARC_TESTNET = {
+  id: 5042002,
+  chainIdHex: "0x4cef52",
+  name: "Arc Testnet",
+  rpcUrl: "https://rpc.testnet.arc.network",
+  explorerUrl: "https://testnet.arcscan.app",
+  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+  tokens: {
+    USDC: { address: "0x3600000000000000000000000000000000000000", decimals: 6 },
+    EURC: { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", decimals: 6 },
+    USYC: { address: "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C", decimals: 6 }
+  }
 };
+var ARC_TESTNET_CHAIN = {
+  id: ARC_TESTNET.id,
+  name: ARC_TESTNET.name,
+  nativeCurrency: ARC_TESTNET.nativeCurrency,
+  rpcUrls: { default: { http: [ARC_TESTNET.rpcUrl] } },
+  blockExplorers: { default: { name: "ArcScan", url: ARC_TESTNET.explorerUrl } }
+};
+
+// circle/arc/src/browser-security.ts
+init_browser_buffer_global();
+function escapeHtml(value) {
+  return value.replace(/[&<>"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;"
+  })[character] ?? character);
+}
+
+// circle/arc/src/arc-merchant-settlement.ts
+var arc = ARC_TESTNET_CHAIN;
+var tokens = { USDC: ARC_TESTNET.tokens.USDC, EURC: ARC_TESTNET.tokens.EURC };
 var abi2 = [{ type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ type: "uint256" }] }, { type: "function", name: "transfer", stateMutability: "nonpayable", inputs: [{ name: "to", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ type: "bool" }] }];
 var publicClient = createPublicClient({ chain: arc, transport: http() });
 var provider = null;
@@ -23962,19 +23993,19 @@ var el = {
   ledger: document.querySelector("#ledger")
 };
 function setStatus(message, hash3) {
-  el.status.innerHTML = hash3 ? `${message} <a href="https://testnet.arcscan.app/tx/${hash3}" target="_blank" rel="noreferrer">ArcScan receipt</a>` : message;
+  el.status.innerHTML = hash3 ? `${message} <a href="${ARC_TESTNET.explorerUrl}/tx/${hash3}" target="_blank" rel="noreferrer">ArcScan receipt</a>` : message;
 }
 function ledger() {
   return JSON.parse(localStorage.getItem(activityKey) ?? "[]");
 }
 function renderLedger() {
   const rows = ledger();
-  el.ledger.innerHTML = rows.length ? rows.map((row) => `<li><strong>${row.kind} \xB7 ${row.token} ${row.amount}</strong><span>${row.reference} \xB7 ${row.counterparty}</span><a href="https://testnet.arcscan.app/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><small>${new Date(row.at).toLocaleString()}</small></li>`).join("") : '<li class="empty">No settlement receipts recorded.</li>';
+  el.ledger.innerHTML = rows.length ? rows.map((row) => `<li><strong>${escapeHtml(row.kind)} \xB7 ${escapeHtml(row.token)} ${escapeHtml(row.amount)}</strong><span>${escapeHtml(row.reference)} \xB7 ${escapeHtml(row.counterparty)}</span><a href="${ARC_TESTNET.explorerUrl}/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><small>${new Date(row.at).toLocaleString()}</small></li>`).join("") : '<li class="empty">No settlement receipts recorded.</li>';
 }
 async function connect() {
   provider = window.ethereum ?? null;
   if (!provider) throw new Error("MetaMask was not found.");
-  await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x4cef52" }] });
+  await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_TESTNET.chainIdHex }] });
   const accounts = await provider.request({ method: "eth_requestAccounts" });
   account = accounts[0];
   wallet = createWalletClient({ account, chain: arc, transport: custom(provider) });
