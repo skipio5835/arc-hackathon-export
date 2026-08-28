@@ -23957,6 +23957,39 @@ var ARC_TESTNET_CHAIN = {
   blockExplorers: { default: { name: "ArcScan", url: ARC_TESTNET.explorerUrl } }
 };
 
+// circle/arc/src/browser-security.ts
+init_browser_buffer_global();
+function escapeHtml(value) {
+  return value.replace(/[&<>"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;"
+  })[character] ?? character);
+}
+function readStoredArray(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) ?? "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    localStorage.removeItem(key);
+    return [];
+  }
+}
+function validTokenAmount(value, decimals = 6) {
+  return new RegExp(`^(?:0|[1-9]\\d*)(?:\\.\\d{1,${decimals}})?$`).test(value) && Number(value) > 0;
+}
+async function assertWalletContext(provider2, expectedChainId, expectedAccount) {
+  const [chainId, accounts] = await Promise.all([
+    provider2.request({ method: "eth_chainId" }),
+    provider2.request({ method: "eth_accounts" })
+  ]);
+  if (chainId.toLowerCase() !== expectedChainId.toLowerCase()) throw new Error("Switch MetaMask to Arc Testnet.");
+  if (!accounts[0] || accounts[0].toLowerCase() !== expectedAccount.toLowerCase()) {
+    throw new Error("The active MetaMask account changed. Reconnect the wallet.");
+  }
+}
+
 // circle/arc/src/arc-treasury-console.ts
 var arc = ARC_TESTNET_CHAIN;
 var tokens = ARC_TESTNET.tokens;
@@ -23988,8 +24021,8 @@ function setStatus(message, hash3) {
   el.status.innerHTML = hash3 ? `${message} <a href="${ARC_TESTNET.explorerUrl}/tx/${hash3}" target="_blank" rel="noreferrer">View on ArcScan</a>` : message;
 }
 function renderActivity() {
-  const rows = JSON.parse(localStorage.getItem(activityKey) ?? "[]");
-  el.activity.innerHTML = rows.length ? rows.map((row) => `<li><strong>${row.token} ${row.amount}</strong> to <code>${row.recipient}</code><br><a href="${ARC_TESTNET.explorerUrl}/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><span>${new Date(row.createdAt).toLocaleString()}</span></li>`).join("") : '<li class="empty">No local transfers recorded yet.</li>';
+  const rows = readStoredArray(activityKey);
+  el.activity.innerHTML = rows.length ? rows.map((row) => `<li><strong>${escapeHtml(row.token)} ${escapeHtml(row.amount)}</strong> to <code>${escapeHtml(row.recipient)}</code><br><a href="${ARC_TESTNET.explorerUrl}/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><span>${new Date(row.createdAt).toLocaleString()}</span></li>`).join("") : '<li class="empty">No local transfers recorded yet.</li>';
 }
 async function connect() {
   provider = window.ethereum ?? null;
@@ -24017,11 +24050,13 @@ async function refreshBalances() {
 async function sendToken() {
   if (!wallet || !account) await connect();
   if (!wallet || !account) throw new Error("Wallet connection failed.");
+  if (!provider) throw new Error("MetaMask provider not found.");
+  await assertWalletContext(provider, ARC_TESTNET.chainIdHex, account);
   const recipient = el.recipient.value.trim();
   const symbol = el.token.value;
   const amount = el.amount.value.trim();
   if (!isAddress(recipient)) throw new Error("Enter a valid recipient address.");
-  if (!amount || Number(amount) <= 0) throw new Error("Enter a positive amount.");
+  if (!validTokenAmount(amount)) throw new Error("Enter a positive amount with up to 6 decimal places.");
   if (symbol === "USYC") throw new Error("USYC is read-only in this console because access is restricted.");
   const token = tokens[symbol];
   setStatus(`Waiting for MetaMask: send ${symbol}...`);
@@ -24034,7 +24069,7 @@ async function sendToken() {
     args: [recipient, parseUnits(amount, token.decimals)]
   });
   await publicClient.waitForTransactionReceipt({ hash: hash3 });
-  const rows = JSON.parse(localStorage.getItem(activityKey) ?? "[]");
+  const rows = readStoredArray(activityKey);
   rows.unshift({ token: symbol, amount, recipient, hash: hash3, createdAt: (/* @__PURE__ */ new Date()).toISOString() });
   localStorage.setItem(activityKey, JSON.stringify(rows.slice(0, 12)));
   renderActivity();

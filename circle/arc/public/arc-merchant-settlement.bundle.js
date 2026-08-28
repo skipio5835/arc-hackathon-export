@@ -23967,6 +23967,28 @@ function escapeHtml(value) {
     '"': "&quot;"
   })[character] ?? character);
 }
+function readStoredArray(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) ?? "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    localStorage.removeItem(key);
+    return [];
+  }
+}
+function validTokenAmount(value, decimals = 6) {
+  return new RegExp(`^(?:0|[1-9]\\d*)(?:\\.\\d{1,${decimals}})?$`).test(value) && Number(value) > 0;
+}
+async function assertWalletContext(provider2, expectedChainId, expectedAccount) {
+  const [chainId, accounts] = await Promise.all([
+    provider2.request({ method: "eth_chainId" }),
+    provider2.request({ method: "eth_accounts" })
+  ]);
+  if (chainId.toLowerCase() !== expectedChainId.toLowerCase()) throw new Error("Switch MetaMask to Arc Testnet.");
+  if (!accounts[0] || accounts[0].toLowerCase() !== expectedAccount.toLowerCase()) {
+    throw new Error("The active MetaMask account changed. Reconnect the wallet.");
+  }
+}
 
 // circle/arc/src/arc-merchant-settlement.ts
 var arc = ARC_TESTNET_CHAIN;
@@ -23996,7 +24018,7 @@ function setStatus(message, hash3) {
   el.status.innerHTML = hash3 ? `${message} <a href="${ARC_TESTNET.explorerUrl}/tx/${hash3}" target="_blank" rel="noreferrer">ArcScan receipt</a>` : message;
 }
 function ledger() {
-  return JSON.parse(localStorage.getItem(activityKey) ?? "[]");
+  return readStoredArray(activityKey);
 }
 function renderLedger() {
   const rows = ledger();
@@ -24024,13 +24046,15 @@ async function refresh() {
 async function submitSettlement() {
   if (!wallet || !account) await connect();
   if (!wallet || !account) throw new Error("Wallet connection failed.");
+  if (!provider) throw new Error("MetaMask provider not found.");
+  await assertWalletContext(provider, ARC_TESTNET.chainIdHex, account);
   const merchant = el.merchant.value.trim();
   const symbol = el.token.value;
   const amount = el.amount.value.trim();
   const reference = el.reference.value.trim();
   if (!isAddress(merchant)) throw new Error("Enter a valid merchant or refund address.");
-  if (!amount || Number(amount) <= 0) throw new Error("Enter a positive amount.");
-  if (!reference) throw new Error("Enter a payment reference.");
+  if (!validTokenAmount(amount)) throw new Error("Enter a positive amount with up to 6 decimal places.");
+  if (!reference || reference.length > 120) throw new Error("Enter a payment reference of 120 characters or fewer.");
   const token = tokens[symbol];
   const kind = el.kind.value;
   setStatus(`Waiting for MetaMask: ${kind.toLowerCase()} ${symbol}...`);
