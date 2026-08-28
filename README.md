@@ -32,6 +32,14 @@ npm.cmd run start-deployer
 Then open the printed local URLs and approve MetaMask prompts manually for the
 flows you want to demonstrate.
 
+## Vercel Deployment
+
+The public deployment includes same-origin Vercel proxy routes for the Circle
+endpoints used by App Kit Bridge and Swap. They forward only to fixed Circle API
+hosts and do not store or inject Circle credentials. Wallet signatures remain
+in MetaMask. A Circle Kit Key is entered locally by the user for App Kit Swap;
+never commit keys or private credentials.
+
 ## Useful Scripts
 
 ```powershell

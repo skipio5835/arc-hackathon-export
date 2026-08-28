@@ -21,3 +21,5 @@ circle/arc/serve-deployer*.log
 .tmp-presentation/
 docs/arc-hackathon-presentation/
 docs/*.inspect.ndjson
+
+.vercel

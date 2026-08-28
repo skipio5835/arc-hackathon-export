@@ -4040,12 +4040,12 @@ var init_lru = __esm({
 });
 
 // node_modules/viem/_esm/utils/address/getAddress.js
-function checksumAddress(address_, chainId2) {
-  if (checksumAddressCache.has(`${address_}.${chainId2}`))
-    return checksumAddressCache.get(`${address_}.${chainId2}`);
-  const hexAddress = chainId2 ? `${chainId2}${address_.toLowerCase()}` : address_.substring(2).toLowerCase();
+function checksumAddress(address_, chainId) {
+  if (checksumAddressCache.has(`${address_}.${chainId}`))
+    return checksumAddressCache.get(`${address_}.${chainId}`);
+  const hexAddress = chainId ? `${chainId}${address_.toLowerCase()}` : address_.substring(2).toLowerCase();
   const hash3 = keccak256(stringToBytes(hexAddress), "bytes");
-  const address = (chainId2 ? hexAddress.substring(`${chainId2}0x`.length) : hexAddress).split("");
+  const address = (chainId ? hexAddress.substring(`${chainId}0x`.length) : hexAddress).split("");
   for (let i = 0; i < 40; i += 2) {
     if (hash3[i >> 1] >> 4 >= 8 && address[i]) {
       address[i] = address[i].toUpperCase();
@@ -4055,13 +4055,13 @@ function checksumAddress(address_, chainId2) {
     }
   }
   const result = `0x${address.join("")}`;
-  checksumAddressCache.set(`${address_}.${chainId2}`, result);
+  checksumAddressCache.set(`${address_}.${chainId}`, result);
   return result;
 }
-function getAddress(address, chainId2) {
+function getAddress(address, chainId) {
   if (!isAddress(address, { strict: false }))
     throw new InvalidAddressError({ address });
-  return checksumAddress(address, chainId2);
+  return checksumAddress(address, chainId);
 }
 var checksumAddressCache;
 var init_getAddress = __esm({
@@ -11882,12 +11882,12 @@ function getSizeOfLength(length) {
 // node_modules/viem/_esm/utils/authorization/hashAuthorization.js
 init_keccak256();
 function hashAuthorization(parameters) {
-  const { chainId: chainId2, nonce, to } = parameters;
+  const { chainId, nonce, to } = parameters;
   const address = parameters.contractAddress ?? parameters.address;
   const hash3 = keccak256(concatHex([
     "0x05",
     toRlp([
-      chainId2 ? numberToHex(chainId2) : "0x",
+      chainId ? numberToHex(chainId) : "0x",
       address,
       nonce ? numberToHex(nonce) : "0x"
     ])
@@ -12525,10 +12525,10 @@ async function fillTransaction(client, parameters) {
     if (typeof nonce_ !== "undefined")
       return nonce_;
     const account_ = parseAccount(account2);
-    const chainId2 = chain ? chain.id : await getAction(client, getChainId, "getChainId")({});
+    const chainId = chain ? chain.id : await getAction(client, getChainId, "getChainId")({});
     return await nonceManager2.consume({
       address: account_.address,
-      chainId: chainId2,
+      chainId,
       client
     });
   })();
@@ -12648,25 +12648,25 @@ async function prepareTransactionRequest(client, args) {
       };
     return void 0;
   })();
-  let chainId2;
+  let chainId;
   async function getChainId2() {
-    if (chainId2)
-      return chainId2;
+    if (chainId)
+      return chainId;
     if (typeof request.chainId !== "undefined")
       return request.chainId;
     if (chain)
       return chain.id;
     const chainId_ = await getAction(client, getChainId, "getChainId")({});
-    chainId2 = chainId_;
-    return chainId2;
+    chainId = chainId_;
+    return chainId;
   }
   const account2 = account_ ? parseAccount(account_) : account_;
   let nonce = request.nonce;
   if (parameters.includes("nonce") && typeof nonce === "undefined" && account2 && nonceManager2) {
-    const chainId3 = await getChainId2();
+    const chainId2 = await getChainId2();
     nonce = await nonceManager2.consume({
       address: account2.address,
-      chainId: chainId3,
+      chainId: chainId2,
       client
     });
   }
@@ -12696,13 +12696,13 @@ async function prepareTransactionRequest(client, args) {
     return false;
   })();
   const fillResult = attemptFill ? await getAction(client, fillTransaction, "fillTransaction")({ ...request, nonce }).then((result) => {
-    const { chainId: chainId3, from: from14, gas: gas2, gasPrice, nonce: nonce2, maxFeePerBlobGas, maxFeePerGas, maxPriorityFeePerGas, type: type2, ...rest } = result.transaction;
+    const { chainId: chainId2, from: from14, gas: gas2, gasPrice, nonce: nonce2, maxFeePerBlobGas, maxFeePerGas, maxPriorityFeePerGas, type: type2, ...rest } = result.transaction;
     supportsFillTransaction.set(client.uid, true);
     return {
       ...request,
       ...from14 ? { from: from14 } : {},
       ...type2 && !request.type ? { type: type2 } : {},
-      ...typeof chainId3 !== "undefined" ? { chainId: chainId3 } : {},
+      ...typeof chainId2 !== "undefined" ? { chainId: chainId2 } : {},
       ...typeof gas2 !== "undefined" ? { gas: gas2 } : {},
       ...typeof gasPrice !== "undefined" ? { gasPrice } : {},
       ...typeof nonce2 !== "undefined" ? { nonce: nonce2 } : {},
@@ -13775,12 +13775,12 @@ async function sendTransaction(client, parameters) {
       return void 0;
     })();
     if (account2?.type === "json-rpc" || account2 === null) {
-      let chainId2;
+      let chainId;
       if (chain !== null) {
-        chainId2 = await getAction(client, getChainId, "getChainId")({});
+        chainId = await getAction(client, getChainId, "getChainId")({});
         if (assertChainId)
           assertCurrentChain({
-            currentChainId: chainId2,
+            currentChainId: chainId,
             chain
           });
       }
@@ -13793,7 +13793,7 @@ async function sendTransaction(client, parameters) {
         account: account2,
         authorizationList,
         blobs,
-        chainId: chainId2,
+        chainId,
         data: dataSuffix ? concat([data ?? "0x", dataSuffix]) : data,
         gas,
         gasPrice,
@@ -13838,14 +13838,14 @@ async function sendTransaction(client, parameters) {
     if (account2?.type === "local") {
       if (account2.nonceManager && typeof nonce === "undefined") {
         const requestChainId = rest.chainId;
-        const chainId2 = await (async () => {
+        const chainId = await (async () => {
           if (typeof requestChainId === "number")
             return requestChainId;
           if (chain)
             return chain.id;
           return getAction(client, getChainId, "getChainId")({});
         })();
-        nonceManagerParameters = { address: account2.address, chainId: chainId2 };
+        nonceManagerParameters = { address: account2.address, chainId };
       }
       const request = await getAction(client, prepareTransactionRequest, "prepareTransactionRequest")({
         account: account2,
@@ -14172,7 +14172,7 @@ async function getCallsStatus(client, parameters) {
   async function getStatus(id) {
     const isTransactions = id.endsWith(fallbackMagicIdentifier.slice(2));
     if (isTransactions) {
-      const chainId3 = trim(sliceHex(id, -64, -32));
+      const chainId2 = trim(sliceHex(id, -64, -32));
       const hashes = sliceHex(id, 0, -64).slice(2).match(/.{1,64}/g);
       const receipts2 = await Promise.all(hashes.map((hash3) => fallbackTransactionErrorMagicIdentifier.slice(2) !== hash3 ? client.request({
         method: "eth_getTransactionReceipt",
@@ -14189,7 +14189,7 @@ async function getCallsStatus(client, parameters) {
       })();
       return {
         atomic: false,
-        chainId: hexToNumber(chainId3),
+        chainId: hexToNumber(chainId2),
         receipts: receipts2.filter(Boolean),
         status: status2,
         version: "2.0.0"
@@ -14200,7 +14200,7 @@ async function getCallsStatus(client, parameters) {
       params: [id]
     });
   }
-  const { atomic = false, chainId: chainId2, receipts, version: version5 = "2.0.0", ...response } = await getStatus(parameters.id);
+  const { atomic = false, chainId, receipts, version: version5 = "2.0.0", ...response } = await getStatus(parameters.id);
   const [status, statusCode] = (() => {
     const statusCode2 = response.status;
     if (statusCode2 >= 100 && statusCode2 < 200)
@@ -14219,7 +14219,7 @@ async function getCallsStatus(client, parameters) {
     ...response,
     atomic,
     // @ts-expect-error: for backwards compatibility
-    chainId: chainId2 ? hexToNumber(chainId2) : void 0,
+    chainId: chainId ? hexToNumber(chainId) : void 0,
     receipts: receipts?.map((receipt) => ({
       ...receipt,
       blockNumber: hexToBigInt(receipt.blockNumber),
@@ -15239,7 +15239,7 @@ var Eip712DomainNotFoundError = class extends BaseError2 {
 async function getEip712Domain(client, parameters) {
   const { address, factory, factoryData } = parameters;
   try {
-    const [fields, name, version5, chainId2, verifyingContract, salt, extensions] = await getAction(client, readContract, "readContract")({
+    const [fields, name, version5, chainId, verifyingContract, salt, extensions] = await getAction(client, readContract, "readContract")({
       abi,
       address,
       functionName: "eip712Domain",
@@ -15250,7 +15250,7 @@ async function getEip712Domain(client, parameters) {
       domain: {
         name,
         version: version5,
-        chainId: Number(chainId2),
+        chainId: Number(chainId),
         verifyingContract,
         salt
       },
@@ -15734,33 +15734,33 @@ function createNonceManager(parameters) {
   const deltaMap = /* @__PURE__ */ new Map();
   const nonceMap = new LruMap(8192);
   const promiseMap = /* @__PURE__ */ new Map();
-  const getKey = ({ address, chainId: chainId2 }) => `${address}.${chainId2}`;
+  const getKey = ({ address, chainId }) => `${address}.${chainId}`;
   const resetCache = (key) => {
     deltaMap.delete(key);
     promiseMap.delete(key);
   };
   return {
-    async consume({ address, chainId: chainId2, client }) {
-      const key = getKey({ address, chainId: chainId2 });
-      const promise = this.get({ address, chainId: chainId2, client });
-      this.increment({ address, chainId: chainId2 });
+    async consume({ address, chainId, client }) {
+      const key = getKey({ address, chainId });
+      const promise = this.get({ address, chainId, client });
+      this.increment({ address, chainId });
       const nonce = await promise;
-      await source.set({ address, chainId: chainId2 }, nonce);
+      await source.set({ address, chainId }, nonce);
       nonceMap.set(key, nonce);
       return nonce;
     },
-    async increment({ address, chainId: chainId2 }) {
-      const key = getKey({ address, chainId: chainId2 });
+    async increment({ address, chainId }) {
+      const key = getKey({ address, chainId });
       const delta = deltaMap.get(key) ?? 0;
       deltaMap.set(key, delta + 1);
     },
-    async get({ address, chainId: chainId2, client }) {
-      const key = getKey({ address, chainId: chainId2 });
+    async get({ address, chainId, client }) {
+      const key = getKey({ address, chainId });
       let promise = promiseMap.get(key);
       if (!promise) {
         promise = (async () => {
           try {
-            const nonce = await source.get({ address, chainId: chainId2, client });
+            const nonce = await source.get({ address, chainId, client });
             const previousNonce = nonceMap.get(key) ?? 0;
             if (previousNonce > 0 && nonce <= previousNonce)
               return previousNonce + 1;
@@ -15775,8 +15775,8 @@ function createNonceManager(parameters) {
       const delta = deltaMap.get(key) ?? 0;
       return delta + await promise;
     },
-    reset({ address, chainId: chainId2 }) {
-      const key = getKey({ address, chainId: chainId2 });
+    reset({ address, chainId }) {
+      const key = getKey({ address, chainId });
       nonceMap.delete(key);
       resetCache(key);
     }
@@ -20785,11 +20785,11 @@ function from8(authorization, options = {}) {
   return { ...authorization, ...options.signature };
 }
 function fromRpc3(authorization) {
-  const { address, chainId: chainId2, nonce } = authorization;
+  const { address, chainId, nonce } = authorization;
   const signature = extract2(authorization);
   return {
     address,
-    chainId: Number(chainId2),
+    chainId: Number(chainId),
     nonce: BigInt(nonce),
     ...signature
   };
@@ -20806,10 +20806,10 @@ function hash2(authorization, options = {}) {
   } : authorization))));
 }
 function toTuple2(authorization) {
-  const { address, chainId: chainId2, nonce } = authorization;
+  const { address, chainId, nonce } = authorization;
   const signature = extract2(authorization);
   return [
-    chainId2 ? fromNumber(chainId2) : "0x",
+    chainId ? fromNumber(chainId) : "0x",
     address,
     nonce ? fromNumber(nonce) : "0x",
     ...signature ? toTuple(signature) : []
@@ -22882,12 +22882,12 @@ init_browser_buffer_global();
 init_browser_buffer_global();
 function parseSiweMessage(message) {
   const { scheme, statement, ...prefix } = message.match(prefixRegex)?.groups ?? {};
-  const { chainId: chainId2, expirationTime, issuedAt, notBefore, requestId, ...suffix } = message.match(suffixRegex)?.groups ?? {};
+  const { chainId, expirationTime, issuedAt, notBefore, requestId, ...suffix } = message.match(suffixRegex)?.groups ?? {};
   const resources = message.split("Resources:")[1]?.split("\n- ").slice(1);
   return {
     ...prefix,
     ...suffix,
-    ...chainId2 ? { chainId: Number(chainId2) } : {},
+    ...chainId ? { chainId: Number(chainId) } : {},
     ...expirationTime ? { expirationTime: new Date(expirationTime) } : {},
     ...issuedAt ? { issuedAt: new Date(issuedAt) } : {},
     ...notBefore ? { notBefore: new Date(notBefore) } : {},
@@ -23207,23 +23207,23 @@ init_browser_buffer_global();
 init_parseAccount();
 init_toHex();
 async function getCapabilities(client, parameters = {}) {
-  const { account: account2 = client.account, chainId: chainId2 } = parameters;
+  const { account: account2 = client.account, chainId } = parameters;
   const account_ = account2 ? parseAccount(account2) : void 0;
-  const params = chainId2 ? [account_?.address, [numberToHex(chainId2)]] : [account_?.address];
+  const params = chainId ? [account_?.address, [numberToHex(chainId)]] : [account_?.address];
   const capabilities_raw = await client.request({
     method: "wallet_getCapabilities",
     params
   });
   const capabilities = {};
-  for (const [chainId3, capabilities_] of Object.entries(capabilities_raw)) {
-    capabilities[Number(chainId3)] = {};
+  for (const [chainId2, capabilities_] of Object.entries(capabilities_raw)) {
+    capabilities[Number(chainId2)] = {};
     for (let [key, value] of Object.entries(capabilities_)) {
       if (key === "addSubAccount")
         key = "unstable_addSubAccount";
-      capabilities[Number(chainId3)][key] = value;
+      capabilities[Number(chainId2)][key] = value;
     }
   }
-  return typeof chainId2 === "number" ? capabilities[chainId2] : capabilities;
+  return typeof chainId === "number" ? capabilities[chainId] : capabilities;
 }
 
 // node_modules/viem/_esm/actions/wallet/getPermissions.js
@@ -23238,7 +23238,7 @@ init_browser_buffer_global();
 init_parseAccount();
 init_isAddressEqual();
 async function prepareAuthorization(client, parameters) {
-  const { account: account_ = client.account, chainId: chainId2, nonce } = parameters;
+  const { account: account_ = client.account, chainId, nonce } = parameters;
   if (!account_)
     throw new AccountNotFoundError({
       docsPath: "/docs/eip7702/prepareAuthorization"
@@ -23253,7 +23253,7 @@ async function prepareAuthorization(client, parameters) {
   })();
   const authorization = {
     address: parameters.contractAddress ?? parameters.address,
-    chainId: chainId2,
+    chainId,
     nonce
   };
   if (typeof authorization.chainId === "undefined")
@@ -23336,12 +23336,12 @@ async function sendTransactionSync(client, parameters) {
       return void 0;
     })();
     if (account2?.type === "json-rpc" || account2 === null) {
-      let chainId2;
+      let chainId;
       if (chain !== null) {
-        chainId2 = await getAction(client, getChainId, "getChainId")({});
+        chainId = await getAction(client, getChainId, "getChainId")({});
         if (assertChainId)
           assertCurrentChain({
-            currentChainId: chainId2,
+            currentChainId: chainId,
             chain
           });
       }
@@ -23354,7 +23354,7 @@ async function sendTransactionSync(client, parameters) {
         account: account2,
         authorizationList,
         blobs,
-        chainId: chainId2,
+        chainId,
         data: dataSuffix ? concat([data ?? "0x", dataSuffix]) : data,
         gas,
         gasPrice,
@@ -23410,14 +23410,14 @@ async function sendTransactionSync(client, parameters) {
     if (account2?.type === "local") {
       if (account2.nonceManager && typeof nonce === "undefined") {
         const requestChainId = rest.chainId;
-        const chainId2 = await (async () => {
+        const chainId = await (async () => {
           if (typeof requestChainId === "number")
             return requestChainId;
           if (chain)
             return chain.id;
           return getAction(client, getChainId, "getChainId")({});
         })();
-        nonceManagerParameters = { address: account2.address, chainId: chainId2 };
+        nonceManagerParameters = { address: account2.address, chainId };
       }
       const request = await getAction(client, prepareTransactionRequest, "prepareTransactionRequest")({
         account: account2,
@@ -23549,10 +23549,10 @@ async function signTransaction(client, parameters) {
     account: account2,
     ...parameters
   });
-  const chainId2 = await getAction(client, getChainId, "getChainId")({});
+  const chainId = await getAction(client, getChainId, "getChainId")({});
   if (chain !== null)
     assertCurrentChain({
-      currentChainId: chainId2,
+      currentChainId: chainId,
       chain
     });
   const formatters = chain?.formatters || client.chain?.formatters;
@@ -23561,7 +23561,7 @@ async function signTransaction(client, parameters) {
     return account2.signTransaction({
       ...transaction,
       account: account2,
-      chainId: chainId2
+      chainId
     }, { serializer: client.chain?.serializers?.transaction });
   return await client.request({
     method: "eth_signTransaction",
@@ -23571,7 +23571,7 @@ async function signTransaction(client, parameters) {
           ...transaction,
           account: account2
         }, "signTransaction"),
-        chainId: numberToHex(chainId2),
+        chainId: numberToHex(chainId),
         from: account2.address
       }
     ]
@@ -23934,20 +23934,32 @@ init_formatEther();
 init_formatGwei();
 init_formatUnits();
 
-// circle/arc/src/arc-treasury-console.ts
-var arc = {
+// circle/arc/src/arc-network.ts
+init_browser_buffer_global();
+var ARC_TESTNET = {
   id: 5042002,
+  chainIdHex: "0x4cef52",
   name: "Arc Testnet",
+  rpcUrl: "https://rpc.testnet.arc.network",
+  explorerUrl: "https://testnet.arcscan.app",
   nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
-  rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } },
-  blockExplorers: { default: { name: "ArcScan", url: "https://testnet.arcscan.app" } }
+  tokens: {
+    USDC: { address: "0x3600000000000000000000000000000000000000", decimals: 6 },
+    EURC: { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", decimals: 6 },
+    USYC: { address: "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C", decimals: 6 }
+  }
 };
-var chainId = "0x4cef52";
-var tokens = {
-  USDC: { address: "0x3600000000000000000000000000000000000000", decimals: 6 },
-  EURC: { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", decimals: 6 },
-  USYC: { address: "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C", decimals: 6 }
+var ARC_TESTNET_CHAIN = {
+  id: ARC_TESTNET.id,
+  name: ARC_TESTNET.name,
+  nativeCurrency: ARC_TESTNET.nativeCurrency,
+  rpcUrls: { default: { http: [ARC_TESTNET.rpcUrl] } },
+  blockExplorers: { default: { name: "ArcScan", url: ARC_TESTNET.explorerUrl } }
 };
+
+// circle/arc/src/arc-treasury-console.ts
+var arc = ARC_TESTNET_CHAIN;
+var tokens = ARC_TESTNET.tokens;
 var erc20Abi2 = [
   { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ type: "uint256" }] },
   { type: "function", name: "transfer", stateMutability: "nonpayable", inputs: [{ name: "to", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ type: "bool" }] }
@@ -23973,16 +23985,16 @@ var el = {
 };
 var activityKey = "ArcTreasuryConsole.activity.v1";
 function setStatus(message, hash3) {
-  el.status.innerHTML = hash3 ? `${message} <a href="https://testnet.arcscan.app/tx/${hash3}" target="_blank" rel="noreferrer">View on ArcScan</a>` : message;
+  el.status.innerHTML = hash3 ? `${message} <a href="${ARC_TESTNET.explorerUrl}/tx/${hash3}" target="_blank" rel="noreferrer">View on ArcScan</a>` : message;
 }
 function renderActivity() {
   const rows = JSON.parse(localStorage.getItem(activityKey) ?? "[]");
-  el.activity.innerHTML = rows.length ? rows.map((row) => `<li><strong>${row.token} ${row.amount}</strong> to <code>${row.recipient}</code><br><a href="https://testnet.arcscan.app/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><span>${new Date(row.createdAt).toLocaleString()}</span></li>`).join("") : '<li class="empty">No local transfers recorded yet.</li>';
+  el.activity.innerHTML = rows.length ? rows.map((row) => `<li><strong>${row.token} ${row.amount}</strong> to <code>${row.recipient}</code><br><a href="${ARC_TESTNET.explorerUrl}/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><span>${new Date(row.createdAt).toLocaleString()}</span></li>`).join("") : '<li class="empty">No local transfers recorded yet.</li>';
 }
 async function connect() {
   provider = window.ethereum ?? null;
   if (!provider) throw new Error("MetaMask was not found.");
-  await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId }] });
+  await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_TESTNET.chainIdHex }] });
   const accounts = await provider.request({ method: "eth_requestAccounts" });
   account = accounts[0];
   wallet = createWalletClient({ account, chain: arc, transport: custom(provider) });

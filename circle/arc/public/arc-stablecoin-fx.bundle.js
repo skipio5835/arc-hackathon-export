@@ -28178,12 +28178,12 @@ var init_lru = __esm({
 });
 
 // node_modules/viem/_esm/utils/address/getAddress.js
-function checksumAddress(address_, chainId2) {
-  if (checksumAddressCache.has(`${address_}.${chainId2}`))
-    return checksumAddressCache.get(`${address_}.${chainId2}`);
-  const hexAddress = chainId2 ? `${chainId2}${address_.toLowerCase()}` : address_.substring(2).toLowerCase();
+function checksumAddress(address_, chainId) {
+  if (checksumAddressCache.has(`${address_}.${chainId}`))
+    return checksumAddressCache.get(`${address_}.${chainId}`);
+  const hexAddress = chainId ? `${chainId}${address_.toLowerCase()}` : address_.substring(2).toLowerCase();
   const hash5 = keccak2562(stringToBytes2(hexAddress), "bytes");
-  const address2 = (chainId2 ? hexAddress.substring(`${chainId2}0x`.length) : hexAddress).split("");
+  const address2 = (chainId ? hexAddress.substring(`${chainId}0x`.length) : hexAddress).split("");
   for (let i = 0; i < 40; i += 2) {
     if (hash5[i >> 1] >> 4 >= 8 && address2[i]) {
       address2[i] = address2[i].toUpperCase();
@@ -28193,13 +28193,13 @@ function checksumAddress(address_, chainId2) {
     }
   }
   const result = `0x${address2.join("")}`;
-  checksumAddressCache.set(`${address_}.${chainId2}`, result);
+  checksumAddressCache.set(`${address_}.${chainId}`, result);
   return result;
 }
-function getAddress2(address2, chainId2) {
+function getAddress2(address2, chainId) {
   if (!isAddress(address2, { strict: false }))
     throw new InvalidAddressError({ address: address2 });
-  return checksumAddress(address2, chainId2);
+  return checksumAddress(address2, chainId);
 }
 var checksumAddressCache;
 var init_getAddress = __esm({
@@ -35007,8 +35007,8 @@ var init_chain = __esm({
       }
     };
     InvalidChainIdError = class extends BaseError2 {
-      constructor({ chainId: chainId2 }) {
-        super(typeof chainId2 === "number" ? `Chain ID "${chainId2}" is invalid.` : "Chain ID is invalid.", { name: "InvalidChainIdError" });
+      constructor({ chainId }) {
+        super(typeof chainId === "number" ? `Chain ID "${chainId}" is invalid.` : "Chain ID is invalid.", { name: "InvalidChainIdError" });
       }
     };
   }
@@ -54230,10 +54230,10 @@ var formatUnits2 = (value, decimals) => {
 var parseUnits2 = (value, decimals) => {
   return parseUnits(value, decimals).toBigInt();
 };
-function createTokenResolutionError(message, selector, chainId2, cause) {
+function createTokenResolutionError(message, selector, chainId, cause) {
   const trace = {
     selector,
-    ...chainId2 === void 0 ? {} : { chainId: chainId2 },
+    ...chainId === void 0 ? {} : { chainId },
     ...{}
   };
   return new KitError({
@@ -54510,8 +54510,8 @@ function normalizeLocator(locator) {
   }
   return locator;
 }
-function buildAddressKey(chainId2, locator) {
-  return `${chainId2}::${normalizeLocator(locator)}`;
+function buildAddressKey(chainId, locator) {
+  return `${chainId}::${normalizeLocator(locator)}`;
 }
 function createTokenRegistry(options = {}) {
   const { tokens: tokens3 = [], requireDecimals = false } = options;
@@ -54524,41 +54524,41 @@ function createTokenRegistry(options = {}) {
   }
   const addressMap = /* @__PURE__ */ new Map();
   for (const token of tokenMap.values()) {
-    for (const [chainId2, locator] of Object.entries(token.locators)) {
+    for (const [chainId, locator] of Object.entries(token.locators)) {
       if (typeof locator !== "string" || locator.trim() === "") {
         continue;
       }
-      addressMap.set(buildAddressKey(chainId2, locator), token);
+      addressMap.set(buildAddressKey(chainId, locator), token);
     }
   }
-  function resolveSymbol(symbol, chainId2) {
+  function resolveSymbol(symbol, chainId) {
     const normalizedSymbol = normalizeSymbol(symbol);
     const definition = tokenMap.get(normalizedSymbol);
     if (definition === void 0) {
-      throw createTokenResolutionError(`Unknown token symbol: ${symbol}. Register it via createTokenRegistry({ tokens: [...] }) or use a raw selector.`, symbol, chainId2);
+      throw createTokenResolutionError(`Unknown token symbol: ${symbol}. Register it via createTokenRegistry({ tokens: [...] }) or use a raw selector.`, symbol, chainId);
     }
-    const locator = definition.locators[chainId2];
+    const locator = definition.locators[chainId];
     if (locator === void 0 || locator.trim() === "") {
-      throw createTokenResolutionError(`Token ${symbol} has no locator for chain ${chainId2}`, symbol, chainId2);
+      throw createTokenResolutionError(`Token ${symbol} has no locator for chain ${chainId}`, symbol, chainId);
     }
-    const decimals = resolveTokenDecimals(definition, chainId2);
+    const decimals = resolveTokenDecimals(definition, chainId);
     return {
       symbol: definition.symbol,
       decimals,
       locator: normalizeLocator(locator)
     };
   }
-  function resolveRaw(selector, chainId2) {
+  function resolveRaw(selector, chainId) {
     const { locator, decimals } = selector;
     if (!locator || typeof locator !== "string") {
-      throw createTokenResolutionError("Raw selector must have a valid locator string", selector, chainId2);
+      throw createTokenResolutionError("Raw selector must have a valid locator string", selector, chainId);
     }
     if (decimals === void 0) {
       const message = requireDecimals ? "Decimals required for raw token selector (requireDecimals: true)" : "Decimals required for raw token selector. Provide { locator, decimals }.";
-      throw createTokenResolutionError(message, selector, chainId2);
+      throw createTokenResolutionError(message, selector, chainId);
     }
     if (typeof decimals !== "number" || decimals < 0 || !Number.isInteger(decimals)) {
-      throw createTokenResolutionError(`Invalid decimals: ${String(decimals)}. Must be a non-negative integer.`, selector, chainId2);
+      throw createTokenResolutionError(`Invalid decimals: ${String(decimals)}. Must be a non-negative integer.`, selector, chainId);
     }
     return {
       decimals,
@@ -54566,37 +54566,37 @@ function createTokenRegistry(options = {}) {
     };
   }
   return {
-    resolve(selector, chainId2) {
+    resolve(selector, chainId) {
       if (selector === null || selector === void 0) {
-        throw createTokenResolutionError("Token selector cannot be null or undefined", selector, chainId2);
+        throw createTokenResolutionError("Token selector cannot be null or undefined", selector, chainId);
       }
-      if (chainId2 === "" || typeof chainId2 !== "string") {
-        throw createTokenResolutionError("Chain ID is required for token resolution", selector, chainId2);
+      if (chainId === "" || typeof chainId !== "string") {
+        throw createTokenResolutionError("Chain ID is required for token resolution", selector, chainId);
       }
       if (isRawSelector(selector)) {
-        return resolveRaw(selector, chainId2);
+        return resolveRaw(selector, chainId);
       }
       if (typeof selector === "string") {
-        return resolveSymbol(selector, chainId2);
+        return resolveSymbol(selector, chainId);
       }
-      throw createTokenResolutionError(`Invalid selector type: ${typeof selector}. Expected string or object with locator.`, selector, chainId2);
+      throw createTokenResolutionError(`Invalid selector type: ${typeof selector}. Expected string or object with locator.`, selector, chainId);
     },
-    resolveByAddress(address2, chainId2) {
+    resolveByAddress(address2, chainId) {
       if (!address2 || typeof address2 !== "string") {
-        throw createTokenResolutionError("Token address is required for address resolution", { locator: address2 }, chainId2);
+        throw createTokenResolutionError("Token address is required for address resolution", { locator: address2 }, chainId);
       }
-      if (chainId2 === "" || typeof chainId2 !== "string") {
-        throw createTokenResolutionError("Chain ID is required for token resolution", { locator: address2 }, chainId2);
+      if (chainId === "" || typeof chainId !== "string") {
+        throw createTokenResolutionError("Chain ID is required for token resolution", { locator: address2 }, chainId);
       }
-      const definition = addressMap.get(buildAddressKey(chainId2, address2));
+      const definition = addressMap.get(buildAddressKey(chainId, address2));
       if (definition === void 0) {
-        throw createTokenResolutionError(`Unknown token address: ${address2} for chain ${chainId2}`, { locator: address2 }, chainId2);
+        throw createTokenResolutionError(`Unknown token address: ${address2} for chain ${chainId}`, { locator: address2 }, chainId);
       }
-      const locator = definition.locators[chainId2];
+      const locator = definition.locators[chainId];
       if (locator === void 0 || locator.trim() === "") {
-        throw createTokenResolutionError(`Token ${definition.symbol} has no locator for chain ${chainId2}`, definition.symbol, chainId2);
+        throw createTokenResolutionError(`Token ${definition.symbol} has no locator for chain ${chainId}`, definition.symbol, chainId);
       }
-      const decimals = resolveTokenDecimals(definition, chainId2);
+      const decimals = resolveTokenDecimals(definition, chainId);
       return {
         symbol: definition.symbol,
         decimals,
@@ -61430,8 +61430,8 @@ var USDC_PERMIT_METADATA_BY_NAME = {
     version: "2"
   }
 };
-var USDC_PERMIT_METADATA = Object.values(USDC_PERMIT_METADATA_BY_NAME).reduce((acc, { chainId: chainId2, name: name3, version: version13 }) => {
-  acc[chainId2] = { name: name3, version: version13 };
+var USDC_PERMIT_METADATA = Object.values(USDC_PERMIT_METADATA_BY_NAME).reduce((acc, { chainId, name: name3, version: version13 }) => {
+  acc[chainId] = { name: name3, version: version13 };
   return acc;
 }, {});
 function supportsEIP2612(tokenAddress, chain2) {
@@ -67618,8 +67618,8 @@ function resolveGatewayApiSources(normalizedSources) {
     if (!source.chains || source.chains.length === 0) {
       return [{ depositor: source.account }];
     }
-    return source.chains.map((chainId2) => {
-      const chain2 = resolveChainIdentifier(chainId2);
+    return source.chains.map((chainId) => {
+      const chain2 = resolveChainIdentifier(chainId);
       const domain = chain2.gateway?.domain;
       if (domain === void 0) {
         throw createInvalidChainError(chain2.name, "does not support Gateway (no Gateway domain configured)");
@@ -71194,12 +71194,12 @@ function getSizeOfLength(length) {
 // node_modules/viem/_esm/utils/authorization/hashAuthorization.js
 init_keccak256();
 function hashAuthorization(parameters) {
-  const { chainId: chainId2, nonce: nonce2, to: to2 } = parameters;
+  const { chainId, nonce: nonce2, to: to2 } = parameters;
   const address2 = parameters.contractAddress ?? parameters.address;
   const hash5 = keccak2562(concatHex([
     "0x05",
     toRlp([
-      chainId2 ? numberToHex(chainId2) : "0x",
+      chainId ? numberToHex(chainId) : "0x",
       address2,
       nonce2 ? numberToHex(nonce2) : "0x"
     ])
@@ -71859,10 +71859,10 @@ async function fillTransaction(client2, parameters) {
     if (typeof nonce_ !== "undefined")
       return nonce_;
     const account_ = parseAccount(account);
-    const chainId2 = chain2 ? chain2.id : await getAction(client2, getChainId, "getChainId")({});
+    const chainId = chain2 ? chain2.id : await getAction(client2, getChainId, "getChainId")({});
     return await nonceManager2.consume({
       address: account_.address,
-      chainId: chainId2,
+      chainId,
       client: client2
     });
   })();
@@ -71982,25 +71982,25 @@ async function prepareTransactionRequest(client2, args) {
       };
     return void 0;
   })();
-  let chainId2;
+  let chainId;
   async function getChainId2() {
-    if (chainId2)
-      return chainId2;
+    if (chainId)
+      return chainId;
     if (typeof request.chainId !== "undefined")
       return request.chainId;
     if (chain2)
       return chain2.id;
     const chainId_ = await getAction(client2, getChainId, "getChainId")({});
-    chainId2 = chainId_;
-    return chainId2;
+    chainId = chainId_;
+    return chainId;
   }
   const account = account_ ? parseAccount(account_) : account_;
   let nonce2 = request.nonce;
   if (parameters.includes("nonce") && typeof nonce2 === "undefined" && account && nonceManager2) {
-    const chainId3 = await getChainId2();
+    const chainId2 = await getChainId2();
     nonce2 = await nonceManager2.consume({
       address: account.address,
-      chainId: chainId3,
+      chainId: chainId2,
       client: client2
     });
   }
@@ -72030,13 +72030,13 @@ async function prepareTransactionRequest(client2, args) {
     return false;
   })();
   const fillResult = attemptFill ? await getAction(client2, fillTransaction, "fillTransaction")({ ...request, nonce: nonce2 }).then((result) => {
-    const { chainId: chainId3, from: from20, gas: gas2, gasPrice, nonce: nonce3, maxFeePerBlobGas, maxFeePerGas, maxPriorityFeePerGas, type: type5, ...rest } = result.transaction;
+    const { chainId: chainId2, from: from20, gas: gas2, gasPrice, nonce: nonce3, maxFeePerBlobGas, maxFeePerGas, maxPriorityFeePerGas, type: type5, ...rest } = result.transaction;
     supportsFillTransaction.set(client2.uid, true);
     return {
       ...request,
       ...from20 ? { from: from20 } : {},
       ...type5 && !request.type ? { type: type5 } : {},
-      ...typeof chainId3 !== "undefined" ? { chainId: chainId3 } : {},
+      ...typeof chainId2 !== "undefined" ? { chainId: chainId2 } : {},
       ...typeof gas2 !== "undefined" ? { gas: gas2 } : {},
       ...typeof gasPrice !== "undefined" ? { gasPrice } : {},
       ...typeof nonce3 !== "undefined" ? { nonce: nonce3 } : {},
@@ -73109,12 +73109,12 @@ async function sendTransaction(client2, parameters) {
       return void 0;
     })();
     if (account?.type === "json-rpc" || account === null) {
-      let chainId2;
+      let chainId;
       if (chain2 !== null) {
-        chainId2 = await getAction(client2, getChainId, "getChainId")({});
+        chainId = await getAction(client2, getChainId, "getChainId")({});
         if (assertChainId)
           assertCurrentChain({
-            currentChainId: chainId2,
+            currentChainId: chainId,
             chain: chain2
           });
       }
@@ -73127,7 +73127,7 @@ async function sendTransaction(client2, parameters) {
         account,
         authorizationList,
         blobs,
-        chainId: chainId2,
+        chainId,
         data: dataSuffix ? concat2([data ?? "0x", dataSuffix]) : data,
         gas,
         gasPrice,
@@ -73172,14 +73172,14 @@ async function sendTransaction(client2, parameters) {
     if (account?.type === "local") {
       if (account.nonceManager && typeof nonce2 === "undefined") {
         const requestChainId = rest.chainId;
-        const chainId2 = await (async () => {
+        const chainId = await (async () => {
           if (typeof requestChainId === "number")
             return requestChainId;
           if (chain2)
             return chain2.id;
           return getAction(client2, getChainId, "getChainId")({});
         })();
-        nonceManagerParameters = { address: account.address, chainId: chainId2 };
+        nonceManagerParameters = { address: account.address, chainId };
       }
       const request = await getAction(client2, prepareTransactionRequest, "prepareTransactionRequest")({
         account,
@@ -73507,7 +73507,7 @@ async function getCallsStatus(client2, parameters) {
   async function getStatus(id) {
     const isTransactions = id.endsWith(fallbackMagicIdentifier.slice(2));
     if (isTransactions) {
-      const chainId3 = trim(sliceHex(id, -64, -32));
+      const chainId2 = trim(sliceHex(id, -64, -32));
       const hashes = sliceHex(id, 0, -64).slice(2).match(/.{1,64}/g);
       const receipts2 = await Promise.all(hashes.map((hash5) => fallbackTransactionErrorMagicIdentifier.slice(2) !== hash5 ? client2.request({
         method: "eth_getTransactionReceipt",
@@ -73524,7 +73524,7 @@ async function getCallsStatus(client2, parameters) {
       })();
       return {
         atomic: false,
-        chainId: hexToNumber3(chainId3),
+        chainId: hexToNumber3(chainId2),
         receipts: receipts2.filter(Boolean),
         status: status2,
         version: "2.0.0"
@@ -73535,7 +73535,7 @@ async function getCallsStatus(client2, parameters) {
       params: [id]
     });
   }
-  const { atomic = false, chainId: chainId2, receipts, version: version13 = "2.0.0", ...response } = await getStatus(parameters.id);
+  const { atomic = false, chainId, receipts, version: version13 = "2.0.0", ...response } = await getStatus(parameters.id);
   const [status, statusCode] = (() => {
     const statusCode2 = response.status;
     if (statusCode2 >= 100 && statusCode2 < 200)
@@ -73554,7 +73554,7 @@ async function getCallsStatus(client2, parameters) {
     ...response,
     atomic,
     // @ts-expect-error: for backwards compatibility
-    chainId: chainId2 ? hexToNumber3(chainId2) : void 0,
+    chainId: chainId ? hexToNumber3(chainId) : void 0,
     receipts: receipts?.map((receipt) => ({
       ...receipt,
       blockNumber: hexToBigInt(receipt.blockNumber),
@@ -74574,7 +74574,7 @@ var Eip712DomainNotFoundError = class extends BaseError2 {
 async function getEip712Domain(client2, parameters) {
   const { address: address2, factory, factoryData } = parameters;
   try {
-    const [fields, name3, version13, chainId2, verifyingContract, salt, extensions] = await getAction(client2, readContract, "readContract")({
+    const [fields, name3, version13, chainId, verifyingContract, salt, extensions] = await getAction(client2, readContract, "readContract")({
       abi,
       address: address2,
       functionName: "eip712Domain",
@@ -74585,7 +74585,7 @@ async function getEip712Domain(client2, parameters) {
       domain: {
         name: name3,
         version: version13,
-        chainId: Number(chainId2),
+        chainId: Number(chainId),
         verifyingContract,
         salt
       },
@@ -74746,12 +74746,12 @@ function assertTransactionEIP7702(transaction) {
   const { authorizationList } = transaction;
   if (authorizationList) {
     for (const authorization of authorizationList) {
-      const { chainId: chainId2 } = authorization;
+      const { chainId } = authorization;
       const address2 = authorization.address;
       if (!isAddress(address2))
         throw new InvalidAddressError({ address: address2 });
-      if (chainId2 < 0)
-        throw new InvalidChainIdError({ chainId: chainId2 });
+      if (chainId < 0)
+        throw new InvalidChainIdError({ chainId });
     }
   }
   assertTransactionEIP1559(transaction);
@@ -74776,9 +74776,9 @@ function assertTransactionEIP4844(transaction) {
   assertTransactionEIP1559(transaction);
 }
 function assertTransactionEIP1559(transaction) {
-  const { chainId: chainId2, maxPriorityFeePerGas, maxFeePerGas, to: to2 } = transaction;
-  if (chainId2 <= 0)
-    throw new InvalidChainIdError({ chainId: chainId2 });
+  const { chainId, maxPriorityFeePerGas, maxFeePerGas, to: to2 } = transaction;
+  if (chainId <= 0)
+    throw new InvalidChainIdError({ chainId });
   if (to2 && !isAddress(to2))
     throw new InvalidAddressError({ address: to2 });
   if (maxFeePerGas && maxFeePerGas > maxUint256)
@@ -74787,9 +74787,9 @@ function assertTransactionEIP1559(transaction) {
     throw new TipAboveFeeCapError({ maxFeePerGas, maxPriorityFeePerGas });
 }
 function assertTransactionEIP2930(transaction) {
-  const { chainId: chainId2, maxPriorityFeePerGas, gasPrice, maxFeePerGas, to: to2 } = transaction;
-  if (chainId2 <= 0)
-    throw new InvalidChainIdError({ chainId: chainId2 });
+  const { chainId, maxPriorityFeePerGas, gasPrice, maxFeePerGas, to: to2 } = transaction;
+  if (chainId <= 0)
+    throw new InvalidChainIdError({ chainId });
   if (to2 && !isAddress(to2))
     throw new InvalidAddressError({ address: to2 });
   if (maxPriorityFeePerGas || maxFeePerGas)
@@ -74798,11 +74798,11 @@ function assertTransactionEIP2930(transaction) {
     throw new FeeCapTooHighError({ maxFeePerGas: gasPrice });
 }
 function assertTransactionLegacy(transaction) {
-  const { chainId: chainId2, maxPriorityFeePerGas, gasPrice, maxFeePerGas, to: to2 } = transaction;
+  const { chainId, maxPriorityFeePerGas, gasPrice, maxFeePerGas, to: to2 } = transaction;
   if (to2 && !isAddress(to2))
     throw new InvalidAddressError({ address: to2 });
-  if (typeof chainId2 !== "undefined" && chainId2 <= 0)
-    throw new InvalidChainIdError({ chainId: chainId2 });
+  if (typeof chainId !== "undefined" && chainId <= 0)
+    throw new InvalidChainIdError({ chainId });
   if (maxPriorityFeePerGas || maxFeePerGas)
     throw new BaseError2("`maxFeePerGas`/`maxPriorityFeePerGas` is not a valid Legacy Transaction attribute.");
   if (gasPrice && gasPrice > maxUint256)
@@ -74847,14 +74847,14 @@ function serializeTransaction(transaction, signature2) {
   return serializeTransactionLegacy(transaction, signature2);
 }
 function serializeTransactionEIP7702(transaction, signature2) {
-  const { authorizationList, chainId: chainId2, gas, nonce: nonce2, to: to2, value, maxFeePerGas, maxPriorityFeePerGas, accessList, data } = transaction;
+  const { authorizationList, chainId, gas, nonce: nonce2, to: to2, value, maxFeePerGas, maxPriorityFeePerGas, accessList, data } = transaction;
   assertTransactionEIP7702(transaction);
   const serializedAccessList = serializeAccessList(accessList);
   const serializedAuthorizationList = serializeAuthorizationList(authorizationList);
   return concatHex([
     "0x04",
     toRlp([
-      numberToHex(chainId2),
+      numberToHex(chainId),
       nonce2 ? numberToHex(nonce2) : "0x",
       maxPriorityFeePerGas ? numberToHex(maxPriorityFeePerGas) : "0x",
       maxFeePerGas ? numberToHex(maxFeePerGas) : "0x",
@@ -74869,7 +74869,7 @@ function serializeTransactionEIP7702(transaction, signature2) {
   ]);
 }
 function serializeTransactionEIP4844(transaction, signature2) {
-  const { chainId: chainId2, gas, nonce: nonce2, to: to2, value, maxFeePerBlobGas, maxFeePerGas, maxPriorityFeePerGas, accessList, data } = transaction;
+  const { chainId, gas, nonce: nonce2, to: to2, value, maxFeePerBlobGas, maxFeePerGas, maxPriorityFeePerGas, accessList, data } = transaction;
   assertTransactionEIP4844(transaction);
   let blobVersionedHashes = transaction.blobVersionedHashes;
   let sidecars = transaction.sidecars;
@@ -74891,7 +74891,7 @@ function serializeTransactionEIP4844(transaction, signature2) {
   }
   const serializedAccessList = serializeAccessList(accessList);
   const serializedTransaction = [
-    numberToHex(chainId2),
+    numberToHex(chainId),
     nonce2 ? numberToHex(nonce2) : "0x",
     maxPriorityFeePerGas ? numberToHex(maxPriorityFeePerGas) : "0x",
     maxFeePerGas ? numberToHex(maxFeePerGas) : "0x",
@@ -74926,11 +74926,11 @@ function serializeTransactionEIP4844(transaction, signature2) {
   ]);
 }
 function serializeTransactionEIP1559(transaction, signature2) {
-  const { chainId: chainId2, gas, nonce: nonce2, to: to2, value, maxFeePerGas, maxPriorityFeePerGas, accessList, data } = transaction;
+  const { chainId, gas, nonce: nonce2, to: to2, value, maxFeePerGas, maxPriorityFeePerGas, accessList, data } = transaction;
   assertTransactionEIP1559(transaction);
   const serializedAccessList = serializeAccessList(accessList);
   const serializedTransaction = [
-    numberToHex(chainId2),
+    numberToHex(chainId),
     nonce2 ? numberToHex(nonce2) : "0x",
     maxPriorityFeePerGas ? numberToHex(maxPriorityFeePerGas) : "0x",
     maxFeePerGas ? numberToHex(maxFeePerGas) : "0x",
@@ -74947,11 +74947,11 @@ function serializeTransactionEIP1559(transaction, signature2) {
   ]);
 }
 function serializeTransactionEIP2930(transaction, signature2) {
-  const { chainId: chainId2, gas, data, nonce: nonce2, to: to2, value, accessList, gasPrice } = transaction;
+  const { chainId, gas, data, nonce: nonce2, to: to2, value, accessList, gasPrice } = transaction;
   assertTransactionEIP2930(transaction);
   const serializedAccessList = serializeAccessList(accessList);
   const serializedTransaction = [
-    numberToHex(chainId2),
+    numberToHex(chainId),
     nonce2 ? numberToHex(nonce2) : "0x",
     gasPrice ? numberToHex(gasPrice) : "0x",
     gas ? numberToHex(gas) : "0x",
@@ -74967,7 +74967,7 @@ function serializeTransactionEIP2930(transaction, signature2) {
   ]);
 }
 function serializeTransactionLegacy(transaction, signature2) {
-  const { chainId: chainId2 = 0, gas, data, nonce: nonce2, to: to2, value, gasPrice } = transaction;
+  const { chainId = 0, gas, data, nonce: nonce2, to: to2, value, gasPrice } = transaction;
   assertTransactionLegacy(transaction);
   let serializedTransaction = [
     nonce2 ? numberToHex(nonce2) : "0x",
@@ -74985,8 +74985,8 @@ function serializeTransactionLegacy(transaction, signature2) {
           return signature2.v;
         return 27n + (signature2.v === 35n ? 0n : 1n);
       }
-      if (chainId2 > 0)
-        return BigInt(chainId2 * 2) + BigInt(35n + signature2.v - 27n);
+      if (chainId > 0)
+        return BigInt(chainId * 2) + BigInt(35n + signature2.v - 27n);
       const v2 = 27n + (signature2.v === 27n ? 0n : 1n);
       if (signature2.v !== v2)
         throw new InvalidLegacyVError({ v: signature2.v });
@@ -75000,10 +75000,10 @@ function serializeTransactionLegacy(transaction, signature2) {
       r === "0x00" ? "0x" : r,
       s === "0x00" ? "0x" : s
     ];
-  } else if (chainId2 > 0) {
+  } else if (chainId > 0) {
     serializedTransaction = [
       ...serializedTransaction,
-      numberToHex(chainId2),
+      numberToHex(chainId),
       "0x",
       "0x"
     ];
@@ -75039,10 +75039,10 @@ function serializeAuthorizationList(authorizationList) {
     return [];
   const serializedAuthorizationList = [];
   for (const authorization of authorizationList) {
-    const { chainId: chainId2, nonce: nonce2, ...signature2 } = authorization;
+    const { chainId, nonce: nonce2, ...signature2 } = authorization;
     const contractAddress = authorization.address;
     serializedAuthorizationList.push([
-      chainId2 ? toHex2(chainId2) : "0x",
+      chainId ? toHex2(chainId) : "0x",
       contractAddress,
       nonce2 ? toHex2(nonce2) : "0x",
       ...toYParitySignatureArray({}, signature2)
@@ -75392,33 +75392,33 @@ function createNonceManager(parameters) {
   const deltaMap = /* @__PURE__ */ new Map();
   const nonceMap = new LruMap(8192);
   const promiseMap = /* @__PURE__ */ new Map();
-  const getKey = ({ address: address2, chainId: chainId2 }) => `${address2}.${chainId2}`;
+  const getKey = ({ address: address2, chainId }) => `${address2}.${chainId}`;
   const resetCache = (key2) => {
     deltaMap.delete(key2);
     promiseMap.delete(key2);
   };
   return {
-    async consume({ address: address2, chainId: chainId2, client: client2 }) {
-      const key2 = getKey({ address: address2, chainId: chainId2 });
-      const promise = this.get({ address: address2, chainId: chainId2, client: client2 });
-      this.increment({ address: address2, chainId: chainId2 });
+    async consume({ address: address2, chainId, client: client2 }) {
+      const key2 = getKey({ address: address2, chainId });
+      const promise = this.get({ address: address2, chainId, client: client2 });
+      this.increment({ address: address2, chainId });
       const nonce2 = await promise;
-      await source.set({ address: address2, chainId: chainId2 }, nonce2);
+      await source.set({ address: address2, chainId }, nonce2);
       nonceMap.set(key2, nonce2);
       return nonce2;
     },
-    async increment({ address: address2, chainId: chainId2 }) {
-      const key2 = getKey({ address: address2, chainId: chainId2 });
+    async increment({ address: address2, chainId }) {
+      const key2 = getKey({ address: address2, chainId });
       const delta = deltaMap.get(key2) ?? 0;
       deltaMap.set(key2, delta + 1);
     },
-    async get({ address: address2, chainId: chainId2, client: client2 }) {
-      const key2 = getKey({ address: address2, chainId: chainId2 });
+    async get({ address: address2, chainId, client: client2 }) {
+      const key2 = getKey({ address: address2, chainId });
       let promise = promiseMap.get(key2);
       if (!promise) {
         promise = (async () => {
           try {
-            const nonce2 = await source.get({ address: address2, chainId: chainId2, client: client2 });
+            const nonce2 = await source.get({ address: address2, chainId, client: client2 });
             const previousNonce = nonceMap.get(key2) ?? 0;
             if (previousNonce > 0 && nonce2 <= previousNonce)
               return previousNonce + 1;
@@ -75433,8 +75433,8 @@ function createNonceManager(parameters) {
       const delta = deltaMap.get(key2) ?? 0;
       return delta + await promise;
     },
-    reset({ address: address2, chainId: chainId2 }) {
-      const key2 = getKey({ address: address2, chainId: chainId2 });
+    reset({ address: address2, chainId }) {
+      const key2 = getKey({ address: address2, chainId });
       nonceMap.delete(key2);
       resetCache(key2);
     }
@@ -80826,11 +80826,11 @@ function from8(authorization, options = {}) {
   return { ...authorization, ...options.signature };
 }
 function fromRpc3(authorization) {
-  const { address: address2, chainId: chainId2, nonce: nonce2 } = authorization;
+  const { address: address2, chainId, nonce: nonce2 } = authorization;
   const signature2 = extract2(authorization);
   return {
     address: address2,
-    chainId: Number(chainId2),
+    chainId: Number(chainId),
     nonce: BigInt(nonce2),
     ...signature2
   };
@@ -80850,10 +80850,10 @@ function hash2(authorization, options = {}) {
   } : authorization))));
 }
 function toRpc4(authorization) {
-  const { address: address2, chainId: chainId2, nonce: nonce2, ...signature2 } = authorization;
+  const { address: address2, chainId, nonce: nonce2, ...signature2 } = authorization;
   return {
     address: address2,
-    chainId: fromNumber(chainId2),
+    chainId: fromNumber(chainId),
     nonce: fromNumber(nonce2),
     ...toRpc3(signature2)
   };
@@ -80862,10 +80862,10 @@ function toRpcList(authorizationList) {
   return authorizationList.map(toRpc4);
 }
 function toTuple2(authorization) {
-  const { address: address2, chainId: chainId2, nonce: nonce2 } = authorization;
+  const { address: address2, chainId, nonce: nonce2 } = authorization;
   const signature2 = extract2(authorization);
   return [
-    chainId2 ? fromNumber(chainId2) : "0x",
+    chainId ? fromNumber(chainId) : "0x",
     address2,
     nonce2 ? fromNumber(nonce2) : "0x",
     ...signature2 ? toTuple(signature2) : []
@@ -82902,12 +82902,12 @@ init_browser_buffer_global();
 init_browser_buffer_global();
 function parseSiweMessage(message) {
   const { scheme, statement, ...prefix } = message.match(prefixRegex)?.groups ?? {};
-  const { chainId: chainId2, expirationTime, issuedAt, notBefore, requestId, ...suffix } = message.match(suffixRegex)?.groups ?? {};
+  const { chainId, expirationTime, issuedAt, notBefore, requestId, ...suffix } = message.match(suffixRegex)?.groups ?? {};
   const resources = message.split("Resources:")[1]?.split("\n- ").slice(1);
   return {
     ...prefix,
     ...suffix,
-    ...chainId2 ? { chainId: Number(chainId2) } : {},
+    ...chainId ? { chainId: Number(chainId) } : {},
     ...expirationTime ? { expirationTime: new Date(expirationTime) } : {},
     ...issuedAt ? { issuedAt: new Date(issuedAt) } : {},
     ...notBefore ? { notBefore: new Date(notBefore) } : {},
@@ -83227,23 +83227,23 @@ init_browser_buffer_global();
 init_parseAccount();
 init_toHex();
 async function getCapabilities(client2, parameters = {}) {
-  const { account = client2.account, chainId: chainId2 } = parameters;
+  const { account = client2.account, chainId } = parameters;
   const account_ = account ? parseAccount(account) : void 0;
-  const params2 = chainId2 ? [account_?.address, [numberToHex(chainId2)]] : [account_?.address];
+  const params2 = chainId ? [account_?.address, [numberToHex(chainId)]] : [account_?.address];
   const capabilities_raw = await client2.request({
     method: "wallet_getCapabilities",
     params: params2
   });
   const capabilities = {};
-  for (const [chainId3, capabilities_] of Object.entries(capabilities_raw)) {
-    capabilities[Number(chainId3)] = {};
+  for (const [chainId2, capabilities_] of Object.entries(capabilities_raw)) {
+    capabilities[Number(chainId2)] = {};
     for (let [key2, value] of Object.entries(capabilities_)) {
       if (key2 === "addSubAccount")
         key2 = "unstable_addSubAccount";
-      capabilities[Number(chainId3)][key2] = value;
+      capabilities[Number(chainId2)][key2] = value;
     }
   }
-  return typeof chainId2 === "number" ? capabilities[chainId2] : capabilities;
+  return typeof chainId === "number" ? capabilities[chainId] : capabilities;
 }
 
 // node_modules/viem/_esm/actions/wallet/getPermissions.js
@@ -83258,7 +83258,7 @@ init_browser_buffer_global();
 init_parseAccount();
 init_isAddressEqual();
 async function prepareAuthorization(client2, parameters) {
-  const { account: account_ = client2.account, chainId: chainId2, nonce: nonce2 } = parameters;
+  const { account: account_ = client2.account, chainId, nonce: nonce2 } = parameters;
   if (!account_)
     throw new AccountNotFoundError({
       docsPath: "/docs/eip7702/prepareAuthorization"
@@ -83273,7 +83273,7 @@ async function prepareAuthorization(client2, parameters) {
   })();
   const authorization = {
     address: parameters.contractAddress ?? parameters.address,
-    chainId: chainId2,
+    chainId,
     nonce: nonce2
   };
   if (typeof authorization.chainId === "undefined")
@@ -83356,12 +83356,12 @@ async function sendTransactionSync(client2, parameters) {
       return void 0;
     })();
     if (account?.type === "json-rpc" || account === null) {
-      let chainId2;
+      let chainId;
       if (chain2 !== null) {
-        chainId2 = await getAction(client2, getChainId, "getChainId")({});
+        chainId = await getAction(client2, getChainId, "getChainId")({});
         if (assertChainId)
           assertCurrentChain({
-            currentChainId: chainId2,
+            currentChainId: chainId,
             chain: chain2
           });
       }
@@ -83374,7 +83374,7 @@ async function sendTransactionSync(client2, parameters) {
         account,
         authorizationList,
         blobs,
-        chainId: chainId2,
+        chainId,
         data: dataSuffix ? concat2([data ?? "0x", dataSuffix]) : data,
         gas,
         gasPrice,
@@ -83430,14 +83430,14 @@ async function sendTransactionSync(client2, parameters) {
     if (account?.type === "local") {
       if (account.nonceManager && typeof nonce2 === "undefined") {
         const requestChainId = rest.chainId;
-        const chainId2 = await (async () => {
+        const chainId = await (async () => {
           if (typeof requestChainId === "number")
             return requestChainId;
           if (chain2)
             return chain2.id;
           return getAction(client2, getChainId, "getChainId")({});
         })();
-        nonceManagerParameters = { address: account.address, chainId: chainId2 };
+        nonceManagerParameters = { address: account.address, chainId };
       }
       const request = await getAction(client2, prepareTransactionRequest, "prepareTransactionRequest")({
         account,
@@ -83569,10 +83569,10 @@ async function signTransaction(client2, parameters) {
     account,
     ...parameters
   });
-  const chainId2 = await getAction(client2, getChainId, "getChainId")({});
+  const chainId = await getAction(client2, getChainId, "getChainId")({});
   if (chain2 !== null)
     assertCurrentChain({
-      currentChainId: chainId2,
+      currentChainId: chainId,
       chain: chain2
     });
   const formatters4 = chain2?.formatters || client2.chain?.formatters;
@@ -83581,7 +83581,7 @@ async function signTransaction(client2, parameters) {
     return account.signTransaction({
       ...transaction,
       account,
-      chainId: chainId2
+      chainId
     }, { serializer: client2.chain?.serializers?.transaction });
   return await client2.request({
     method: "eth_signTransaction",
@@ -83591,7 +83591,7 @@ async function signTransaction(client2, parameters) {
           ...transaction,
           account
         }, "signTransaction"),
-        chainId: numberToHex(chainId2),
+        chainId: numberToHex(chainId),
         from: account.address
       }
     ]
@@ -84263,11 +84263,11 @@ function isEIP712Transaction(transaction) {
 
 // node_modules/viem/_esm/zksync/utils/assertEip712Transaction.js
 function assertEip712Transaction(transaction) {
-  const { chainId: chainId2, to: to2, from: from20, paymaster, paymasterInput } = transaction;
+  const { chainId, to: to2, from: from20, paymaster, paymasterInput } = transaction;
   if (!isEIP712Transaction(transaction))
     throw new InvalidEip712TransactionError();
-  if (!chainId2 || chainId2 <= 0)
-    throw new InvalidChainIdError({ chainId: chainId2 });
+  if (!chainId || chainId <= 0)
+    throw new InvalidChainIdError({ chainId });
   if (to2 && !isAddress(to2))
     throw new InvalidAddressError({ address: to2 });
   if (from20 && !isAddress(from20))
@@ -84292,7 +84292,7 @@ var serializers = {
   transaction: serializeTransaction2
 };
 function serializeTransactionEIP712(transaction) {
-  const { chainId: chainId2, gas, nonce: nonce2, to: to2, from: from20, value, maxFeePerGas, maxPriorityFeePerGas, customSignature, factoryDeps, paymaster, paymasterInput, gasPerPubdata, data } = transaction;
+  const { chainId, gas, nonce: nonce2, to: to2, from: from20, value, maxFeePerGas, maxPriorityFeePerGas, customSignature, factoryDeps, paymaster, paymasterInput, gasPerPubdata, data } = transaction;
   assertEip712Transaction(transaction);
   const serializedTransaction = [
     nonce2 ? toHex2(nonce2) : "0x",
@@ -84302,10 +84302,10 @@ function serializeTransactionEIP712(transaction) {
     to2 ?? "0x",
     value ? toHex2(value) : "0x",
     data ?? "0x",
-    toHex2(chainId2),
+    toHex2(chainId),
     toHex2(""),
     toHex2(""),
-    toHex2(chainId2),
+    toHex2(chainId),
     from20 ?? "0x",
     gasPerPubdata ? toHex2(gasPerPubdata) : toHex2(gasPerPubdataDefault),
     factoryDeps ?? [],
@@ -85559,9 +85559,9 @@ var serializers3 = {
 };
 function serializeTransactionCIP64(transaction, signature2) {
   assertTransactionCIP64(transaction);
-  const { chainId: chainId2, gas, nonce: nonce2, to: to2, value, maxFeePerGas, maxPriorityFeePerGas, accessList, feeCurrency, data } = transaction;
+  const { chainId, gas, nonce: nonce2, to: to2, value, maxFeePerGas, maxPriorityFeePerGas, accessList, feeCurrency, data } = transaction;
   const serializedTransaction = [
-    toHex2(chainId2),
+    toHex2(chainId),
     nonce2 ? toHex2(nonce2) : "0x",
     maxPriorityFeePerGas ? toHex2(maxPriorityFeePerGas) : "0x",
     maxFeePerGas ? toHex2(maxFeePerGas) : "0x",
@@ -85580,9 +85580,9 @@ function serializeTransactionCIP64(transaction, signature2) {
 }
 var MAX_MAX_FEE_PER_GAS = maxUint256;
 function assertTransactionCIP64(transaction) {
-  const { chainId: chainId2, maxPriorityFeePerGas, gasPrice, maxFeePerGas, to: to2, feeCurrency } = transaction;
-  if (chainId2 <= 0)
-    throw new InvalidChainIdError({ chainId: chainId2 });
+  const { chainId, maxPriorityFeePerGas, gasPrice, maxFeePerGas, to: to2, feeCurrency } = transaction;
+  if (chainId <= 0)
+    throw new InvalidChainIdError({ chainId });
   if (to2 && !isAddress(to2))
     throw new InvalidAddressError({ address: to2 });
   if (gasPrice)
@@ -91203,11 +91203,11 @@ function from16(authorization, options = {}) {
   return resolved;
 }
 function fromRpc5(authorization) {
-  const { address: address2, chainId: chainId2, nonce: nonce2 } = authorization;
+  const { address: address2, chainId, nonce: nonce2 } = authorization;
   const signature2 = fromRpc4(authorization.signature);
   return {
     address: address2,
-    chainId: Number(chainId2),
+    chainId: Number(chainId),
     nonce: BigInt(nonce2),
     signature: signature2
   };
@@ -91216,10 +91216,10 @@ function fromRpcList2(authorizationList) {
   return authorizationList.map((x) => fromRpc5(x));
 }
 function fromTuple3(tuple2) {
-  const [chainId2, address2, nonce2, signatureSerialized] = tuple2;
+  const [chainId, address2, nonce2, signatureSerialized] = tuple2;
   const args = {
     address: address2,
-    chainId: chainId2 === "0x" ? 0 : Number(chainId2),
+    chainId: chainId === "0x" ? 0 : Number(chainId),
     nonce: nonce2 === "0x" ? 0n : BigInt(nonce2)
   };
   if (signatureSerialized)
@@ -91233,10 +91233,10 @@ function fromTupleList(tupleList) {
   return list;
 }
 function toRpc6(authorization) {
-  const { address: address2, chainId: chainId2, nonce: nonce2, signature: signature2 } = authorization;
+  const { address: address2, chainId, nonce: nonce2, signature: signature2 } = authorization;
   return {
     address: address2,
-    chainId: fromNumber(chainId2),
+    chainId: fromNumber(chainId),
     nonce: fromNumber(nonce2),
     signature: toRpc5(signature2)
   };
@@ -91245,10 +91245,10 @@ function toRpcList2(authorizationList) {
   return authorizationList.map((x) => toRpc6(x));
 }
 function toTuple4(authorization) {
-  const { address: address2, chainId: chainId2, nonce: nonce2 } = authorization;
+  const { address: address2, chainId, nonce: nonce2 } = authorization;
   const signature2 = authorization.signature ? serialize2(authorization.signature) : void 0;
   return [
-    chainId2 ? fromNumber(chainId2) : "0x",
+    chainId ? fromNumber(chainId) : "0x",
     address2,
     nonce2 ? fromNumber(nonce2) : "0x",
     ...signature2 ? [signature2] : []
@@ -91341,7 +91341,7 @@ function from17(authorization, options = {}) {
   return resolved;
 }
 function fromRpc6(authorization) {
-  const { allowedCalls, chainId: chainId2, keyId, expiry, limits, keyType } = authorization;
+  const { allowedCalls, chainId, keyId, expiry, limits, keyType } = authorization;
   const witness = authorization.witness ?? void 0;
   const isAdmin2 = authorization.isAdmin ?? void 0;
   const account = authorization.account ?? void 0;
@@ -91359,7 +91359,7 @@ function fromRpc6(authorization) {
   }) : void 0;
   return {
     address: keyId,
-    chainId: chainId2 === "0x" ? 0n : toBigInt(chainId2),
+    chainId: chainId === "0x" ? 0n : toBigInt(chainId),
     ...expiry != null ? { expiry: Number(expiry) } : {},
     limits: limits?.map((limit) => ({
       token: limit.token,
@@ -91376,7 +91376,7 @@ function fromRpc6(authorization) {
 }
 function fromTuple4(tuple2) {
   const [authorization, signatureSerialized] = tuple2;
-  const [chainId2, keyType_hex, keyId, ...trailing] = authorization;
+  const [chainId, keyType_hex, keyId, ...trailing] = authorization;
   const keyType = (() => {
     switch (keyType_hex) {
       case "0x":
@@ -91427,7 +91427,7 @@ function fromTuple4(tuple2) {
   const adminPair = account !== void 0 && isAdmin2 ? { account, isAdmin: true } : {};
   const args = {
     address: keyId,
-    chainId: chainId2 === "0x" ? 0n : toBigInt(chainId2),
+    chainId: chainId === "0x" ? 0n : toBigInt(chainId),
     type: keyType,
     ...expiry !== void 0 ? { expiry } : {},
     ...limits !== void 0 ? { limits } : {},
@@ -91456,7 +91456,7 @@ function serialize3(authorization) {
   return fromHex3(tuple2);
 }
 function toRpc7(authorization) {
-  const { address: address2, scopes, chainId: chainId2, expiry, limits, type: type4, signature: signature2, witness, isAdmin: isAdmin2, account } = authorization;
+  const { address: address2, scopes, chainId, expiry, limits, type: type4, signature: signature2, witness, isAdmin: isAdmin2, account } = authorization;
   if (witness !== void 0)
     assertWitness(witness);
   const allowedCalls = (() => {
@@ -91480,7 +91480,7 @@ function toRpc7(authorization) {
     }));
   })();
   return {
-    chainId: chainId2 === 0n ? "0x" : fromNumber(chainId2),
+    chainId: chainId === 0n ? "0x" : fromNumber(chainId),
     expiry: typeof expiry === "number" ? fromNumber(expiry) : null,
     keyId: resolve(address2),
     keyType: type4,
@@ -91497,7 +91497,7 @@ function toRpc7(authorization) {
   };
 }
 function toTuple5(authorization) {
-  const { address: address2, chainId: chainId2, scopes, expiry, limits, witness, isAdmin: isAdmin2, account } = authorization;
+  const { address: address2, chainId, scopes, expiry, limits, witness, isAdmin: isAdmin2, account } = authorization;
   if (witness !== void 0)
     assertWitness(witness);
   const signature2 = authorization.signature ? serialize2(authorization.signature) : void 0;
@@ -91564,7 +91564,7 @@ function toTuple5(authorization) {
       break;
     }
   const trailing = optionals.slice(0, lastPresent + 1).map(({ value, placeholder }) => value ?? placeholder);
-  const authorizationTuple = [bigintToHex(chainId2), type4, address2, ...trailing];
+  const authorizationTuple = [bigintToHex(chainId), type4, address2, ...trailing];
   return [authorizationTuple, ...signature2 ? [signature2] : []];
 }
 function bigintToHex(value) {
@@ -92142,8 +92142,8 @@ var FeeCapTooHighError2 = class extends BaseError3 {
   }
 };
 var InvalidChainIdError2 = class extends BaseError3 {
-  constructor({ chainId: chainId2 }) {
-    super(typeof chainId2 !== "undefined" ? `Chain ID "${chainId2}" is invalid.` : "Chain ID is invalid.");
+  constructor({ chainId }) {
+    super(typeof chainId !== "undefined" ? `Chain ID "${chainId}" is invalid.` : "Chain ID is invalid.");
     Object.defineProperty(this, "name", {
       enumerable: true,
       configurable: true,
@@ -92188,7 +92188,7 @@ var feePayerMagic = "0x78";
 var serializedType = "0x76";
 var type3 = "tempo";
 function assert13(envelope) {
-  const { calls, chainId: chainId2, maxFeePerGas, maxPriorityFeePerGas, validBefore, validAfter } = envelope;
+  const { calls, chainId, maxFeePerGas, maxPriorityFeePerGas, validBefore, validAfter } = envelope;
   if (!calls || calls.length === 0)
     throw new CallsEmptyError();
   if (typeof validBefore === "number" && typeof validAfter === "number" && validBefore <= validAfter) {
@@ -92202,8 +92202,8 @@ function assert13(envelope) {
       if (call2.to)
         assert7(call2.to, { strict: false });
   }
-  if (chainId2 <= 0)
-    throw new InvalidChainIdError2({ chainId: chainId2 });
+  if (chainId <= 0)
+    throw new InvalidChainIdError2({ chainId });
   if (maxFeePerGas && BigInt(maxFeePerGas) > 2n ** 256n - 1n)
     throw new FeeCapTooHighError2({
       feeCap: maxFeePerGas
@@ -92216,14 +92216,14 @@ function assert13(envelope) {
 }
 function deserialize4(serialized) {
   const transactionArray = toHex4(slice3(serialized, 1));
-  const [chainId2, maxPriorityFeePerGas, maxFeePerGas, gas, calls, accessList, nonceKey, nonce2, validBefore, validAfter, feeToken, feePayerSignatureOrSender, authorizationList, keyAuthorizationOrSignature, maybeSignature] = transactionArray;
+  const [chainId, maxPriorityFeePerGas, maxFeePerGas, gas, calls, accessList, nonceKey, nonce2, validBefore, validAfter, feeToken, feePayerSignatureOrSender, authorizationList, keyAuthorizationOrSignature, maybeSignature] = transactionArray;
   const keyAuthorization = Array.isArray(keyAuthorizationOrSignature) ? keyAuthorizationOrSignature : void 0;
   const signature2 = keyAuthorization ? maybeSignature : keyAuthorizationOrSignature;
   if (!(transactionArray.length === 13 || transactionArray.length === 14 || transactionArray.length === 15))
     throw new InvalidSerializedError2({
       attributes: {
         authorizationList,
-        chainId: chainId2,
+        chainId,
         maxPriorityFeePerGas,
         maxFeePerGas,
         gas,
@@ -92244,7 +92244,7 @@ function deserialize4(serialized) {
       type: type3
     });
   let transaction = {
-    chainId: Number(chainId2),
+    chainId: Number(chainId),
     type: type3
   };
   if (validate6(gas) && gas !== "0x")
@@ -92329,7 +92329,7 @@ function from19(envelope, options = {}) {
   };
 }
 function serialize4(envelope, options = {}) {
-  const { accessList, authorizationList, calls, chainId: chainId2, feeToken, gas, keyAuthorization, nonce: nonce2, nonceKey, maxFeePerGas, maxPriorityFeePerGas, validBefore, validAfter } = envelope;
+  const { accessList, authorizationList, calls, chainId, feeToken, gas, keyAuthorization, nonce: nonce2, nonceKey, maxFeePerGas, maxPriorityFeePerGas, validBefore, validAfter } = envelope;
   assert13(envelope);
   const accessTupleList = toTupleList2(accessList);
   const signature2 = options.signature || envelope.signature;
@@ -92365,7 +92365,7 @@ function serialize4(envelope, options = {}) {
     return toTuple(feePayerSignature);
   })();
   const serialized = [
-    fromNumber(chainId2),
+    fromNumber(chainId),
     maxPriorityFeePerGas ? fromNumber(maxPriorityFeePerGas) : "0x",
     maxFeePerGas ? fromNumber(maxFeePerGas) : "0x",
     gas ? fromNumber(gas) : "0x",
@@ -95470,7 +95470,7 @@ async function serializeTempo(transaction, sig) {
       });
     return void 0;
   })();
-  const { chainId: chainId2, feePayer, nonce: nonce2, ...rest } = transaction;
+  const { chainId, feePayer, nonce: nonce2, ...rest } = transaction;
   const feePayerSignature = (() => {
     const feePayerSignature2 = transaction.feePayerSignature;
     if (feePayerSignature2)
@@ -95494,7 +95494,7 @@ async function serializeTempo(transaction, sig) {
         data: rest.data
       }
     ],
-    chainId: Number(chainId2),
+    chainId: Number(chainId),
     feePayerSignature,
     type: "tempo",
     ...nonce2 ? { nonce: BigInt(nonce2) } : {}
@@ -95578,14 +95578,14 @@ function isAccessKeyAccount(account) {
   return account.source === "accessKey" && "accessKeyAddress" in account;
 }
 async function signKeyAuthorization(account, parameters) {
-  const { chainId: chainId2, key: key2, expiry, limits, scopes, witness, admin } = parameters;
+  const { chainId, key: key2, expiry, limits, scopes, witness, admin } = parameters;
   const { accessKeyAddress, keyType: type4 } = resolveAccessKey(key2);
   const isAccessKey = isAccessKeyAccount(account);
   const boundFields = isAccessKey ? { account: account.address } : {};
   const restrictions = admin ? {} : { expiry, limits, scopes };
   const hash5 = KeyAuthorization_exports.getSignPayload({
     address: accessKeyAddress,
-    chainId: chainId2,
+    chainId,
     type: type4,
     witness,
     ...admin ? { isAdmin: true } : {},
@@ -95595,7 +95595,7 @@ async function signKeyAuthorization(account, parameters) {
   const signature2 = isAccessKey ? await account.sign({ hash: hash5, raw: true }) : await account.sign({ hash: hash5 });
   return KeyAuthorization_exports.from({
     address: accessKeyAddress,
-    chainId: chainId2,
+    chainId,
     signature: SignatureEnvelope_exports.from(signature2),
     type: type4,
     ...witness ? { witness } : {},
@@ -95670,15 +95670,15 @@ async function authorize(client2, parameters) {
 }
 (function(authorize2) {
   async function inner(action, client2, parameters) {
-    const { accessKey, admin, chainId: chainId2 = client2.chain?.id, expiry, limits, scopes, witness, ...rest } = parameters;
+    const { accessKey, admin, chainId = client2.chain?.id, expiry, limits, scopes, witness, ...rest } = parameters;
     const account_ = rest.account ?? client2.account;
     if (!account_)
       throw new Error("account is required.");
-    if (!chainId2)
+    if (!chainId)
       throw new Error("chainId is required.");
     const parsed = parseAccount(account_);
     const keyAuthorization = await signKeyAuthorization(parsed, {
-      chainId: BigInt(chainId2),
+      chainId: BigInt(chainId),
       key: accessKey,
       admin,
       expiry,
@@ -96104,11 +96104,11 @@ var chainConfig5 = {
       if (!request.keyAuthorization && request.account?.source === "accessKey") {
         const keyAuthorizationManager = request.account.keyAuthorizationManager;
         if (keyAuthorizationManager) {
-          const chainId2 = request.chainId ?? request.chain?.id;
-          if (typeof chainId2 !== "undefined") {
+          const chainId = request.chainId ?? request.chain?.id;
+          if (typeof chainId !== "undefined") {
             const address2 = request.account.address;
             const accessKey = request.account.accessKeyAddress;
-            const key2 = { address: address2, accessKey, chainId: chainId2 };
+            const key2 = { address: address2, accessKey, chainId };
             const keyAuthorization = await keyAuthorizationManager.get(key2);
             if (keyAuthorization) {
               const now = BigInt(Math.floor(Date.now() / 1e3));
@@ -132724,12 +132724,12 @@ var ViemAdapter = class extends EvmAdapter {
    * ```
    */
   async initializeWalletClient(chain2) {
-    const chainId2 = chain2.chainId;
-    const cachedClient = this.cachedWalletClients.get(chainId2);
+    const chainId = chain2.chainId;
+    const cachedClient = this.cachedWalletClients.get(chainId);
     if (cachedClient) {
       return cachedClient;
     }
-    const ongoingInit = this.walletClientInitPromises.get(chainId2);
+    const ongoingInit = this.walletClientInitPromises.get(chainId);
     if (ongoingInit) {
       return ongoingInit;
     }
@@ -132738,15 +132738,15 @@ var ViemAdapter = class extends EvmAdapter {
         const viemChain = getViemChainByEnum(chain2.chain);
         const getWalletClientFn = this.options.getWalletClient;
         const walletClient = await getWalletClientFn({ chain: viemChain });
-        this.cachedWalletClients.set(chainId2, walletClient);
-        this.walletClientInitPromises.delete(chainId2);
+        this.cachedWalletClients.set(chainId, walletClient);
+        this.walletClientInitPromises.delete(chainId);
         return walletClient;
       } catch (error) {
-        this.walletClientInitPromises.delete(chainId2);
+        this.walletClientInitPromises.delete(chainId);
         throw new Error(`Failed to initialize wallet client for chain ${chain2.name}: ${error instanceof Error ? error.message : String(error)}`);
       }
     })();
-    this.walletClientInitPromises.set(chainId2, initPromise);
+    this.walletClientInitPromises.set(chainId, initPromise);
     return initPromise;
   }
   /**
@@ -133280,10 +133280,43 @@ async function createViemAdapterFromProvider(params2) {
   return await Promise.resolve(adapter2);
 }
 
+// circle/arc/src/arc-network.ts
+init_browser_buffer_global();
+var ARC_TESTNET = {
+  id: 5042002,
+  chainIdHex: "0x4cef52",
+  name: "Arc Testnet",
+  rpcUrl: "https://rpc.testnet.arc.network",
+  explorerUrl: "https://testnet.arcscan.app",
+  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+  tokens: {
+    USDC: { address: "0x3600000000000000000000000000000000000000", decimals: 6 },
+    EURC: { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", decimals: 6 },
+    USYC: { address: "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C", decimals: 6 }
+  }
+};
+var ARC_TESTNET_CHAIN = {
+  id: ARC_TESTNET.id,
+  name: ARC_TESTNET.name,
+  nativeCurrency: ARC_TESTNET.nativeCurrency,
+  rpcUrls: { default: { http: [ARC_TESTNET.rpcUrl] } },
+  blockExplorers: { default: { name: "ArcScan", url: ARC_TESTNET.explorerUrl } }
+};
+
+// circle/arc/src/browser-security.ts
+init_browser_buffer_global();
+function escapeHtml(value) {
+  return value.replace(/[&<>"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;"
+  })[character] ?? character);
+}
+
 // circle/arc/src/arc-stablecoin-fx.ts
-var arc2 = { id: 5042002, name: "Arc Testnet", nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } }, blockExplorers: { default: { name: "ArcScan", url: "https://testnet.arcscan.app" } } };
-var chainId = "0x4cef52";
-var tokens2 = { USDC: { address: "0x3600000000000000000000000000000000000000", decimals: 6 }, EURC: { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", decimals: 6 } };
+var arc2 = ARC_TESTNET_CHAIN;
+var tokens2 = { USDC: ARC_TESTNET.tokens.USDC, EURC: ARC_TESTNET.tokens.EURC };
 var abi2 = [{ type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ type: "uint256" }] }];
 var kit = new AppKit();
 var client = createPublicClient({ chain: arc2, transport: http2() });
@@ -133325,7 +133358,7 @@ async function refresh() {
 }
 async function connect() {
   if (!window.ethereum) throw new Error("MetaMask provider not found.");
-  await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId }] });
+  await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_TESTNET.chainIdHex }] });
   const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
   address = accounts[0] ?? "";
   adapter = await createViemAdapterFromProvider({ provider: window.ethereum });
@@ -133337,10 +133370,11 @@ async function connect() {
   setStatus("Wallet connected. Enter a TEST KIT_KEY to request an FX quote.");
 }
 function renderQuote(value) {
-  el.quoteBox.innerHTML = `<div><strong>Pair</strong><span>${value.estimatedOutput.token} received for ${value.stopLimit.token} sold</span></div><div><strong>Estimated output</strong><span>${value.estimatedOutput.amount} ${value.estimatedOutput.token}</span></div><div><strong>Stop limit</strong><span>${value.stopLimit.amount} ${value.stopLimit.token}</span></div><div><strong>Fees</strong><span>${value.fees?.map((fee) => `${fee.type}: ${fee.amount} ${fee.token}`).join(", ") || "-"}</span></div>`;
+  el.quoteBox.innerHTML = `<div><strong>Pair</strong><span>${escapeHtml(`${value.estimatedOutput.token} received for ${value.stopLimit.token} sold`)}</span></div><div><strong>Estimated output</strong><span>${escapeHtml(`${value.estimatedOutput.amount} ${value.estimatedOutput.token}`)}</span></div><div><strong>Stop limit</strong><span>${escapeHtml(`${value.stopLimit.amount} ${value.stopLimit.token}`)}</span></div><div><strong>Fees</strong><span>${escapeHtml(value.fees?.map((fee) => `${fee.type}: ${fee.amount} ${fee.token}`).join(", ") || "-")}</span></div>`;
 }
 function renderResult(value) {
-  el.resultBox.innerHTML = `<div><strong>Input</strong><span>${value.amountIn} ${value.tokenIn}</span></div><div><strong>Output</strong><span>${value.amountOut ?? "-"} ${value.tokenOut}</span></div><div><strong>Transaction</strong><span>${value.txHash}</span></div><a href="${value.explorerUrl ?? `https://testnet.arcscan.app/tx/${value.txHash}`}" target="_blank" rel="noreferrer">View ArcScan receipt</a>`;
+  const receiptUrl = value.explorerUrl ?? `${ARC_TESTNET.explorerUrl}/tx/${value.txHash}`;
+  el.resultBox.innerHTML = `<div><strong>Input</strong><span>${escapeHtml(`${value.amountIn} ${value.tokenIn}`)}</span></div><div><strong>Output</strong><span>${escapeHtml(`${value.amountOut ?? "-"} ${value.tokenOut}`)}</span></div><div><strong>Transaction</strong><span>${escapeHtml(value.txHash)}</span></div><a href="${escapeHtml(receiptUrl)}" target="_blank" rel="noreferrer">View ArcScan receipt</a>`;
   localStorage.setItem("ArcStablecoinFX.lastTrade", JSON.stringify(value, (_key, entry) => typeof entry === "bigint" ? entry.toString() : entry));
 }
 async function estimate2() {

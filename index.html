@@ -3,34 +3,49 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Arc Hackathon Export</title>
+    <title>Arc Merchant Console</title>
     <style>
       :root { color-scheme: light; font-family: Inter, system-ui, sans-serif; background: #f5f7fa; color: #17202a; }
-      * { box-sizing: border-box; } body { margin: 0; } main { width: min(980px, 100%); margin: auto; padding: 52px 24px; display: grid; gap: 28px; }
-      .eyebrow { color: #13795b; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; font-size: 12px; }
-      h1, h2, p { margin: 0; } h1 { max-width: 720px; font-size: clamp(34px, 6vw, 58px); line-height: 1.04; color: #0f172a; } h2 { font-size: 18px; }
-      .lead { max-width: 720px; color: #526170; font-size: 19px; line-height: 1.5; }
-      .panel { background: #fff; border: 1px solid #d9e0e7; border-radius: 8px; padding: 20px; display: grid; gap: 14px; }
-      .links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-      a { display: block; color: #155e75; text-decoration: none; font-weight: 750; border: 1px solid #c9d7df; border-radius: 6px; padding: 14px; background: #f8fbfc; }
-      a:hover { border-color: #13795b; background: #f0faf6; } .muted { color: #627184; font-size: 13px; line-height: 1.5; }
-      footer { color: #627184; font-size: 13px; display: flex; gap: 18px; flex-wrap: wrap; } footer a { display: inline; border: 0; padding: 0; background: transparent; }
-      @media (max-width: 640px) { main { padding: 32px 16px; } .links { grid-template-columns: 1fr; } }
+      * { box-sizing: border-box; } body { margin: 0; } main { width: min(1080px, 100%); margin: auto; padding: 28px 24px 48px; display: grid; gap: 20px; }
+      header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; } .brand { display: grid; gap: 5px; }
+      .eyebrow { color: #13795b; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; font-size: 12px; } h1, h2, h3, p { margin: 0; } h1 { font-size: 28px; } h2 { font-size: 18px; } h3 { font-size: 15px; }
+      .muted { color: #627184; font-size: 14px; line-height: 1.5; } .badge { border: 1px solid #b8ddd0; background: #edf9f3; color: #13795b; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: 800; }
+      .panel { background: #fff; border: 1px solid #d9e0e7; border-radius: 8px; padding: 18px; display: grid; gap: 14px; } .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+      .flow-item { min-height: 104px; padding: 14px; border: 1px solid #d9e0e7; border-radius: 6px; background: #f8fbfc; display: grid; gap: 6px; align-content: start; } .flow-item span { color: #13795b; font-size: 12px; font-weight: 800; }
+      .tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } a.tool { color: inherit; text-decoration: none; border: 1px solid #c9d7df; border-radius: 6px; padding: 14px; background: #fff; min-height: 110px; display: grid; gap: 7px; align-content: start; } a.tool:hover { border-color: #13795b; background: #f0faf6; } a.tool strong { color: #155e75; } a.tool span { color: #627184; font-size: 13px; line-height: 1.45; }
+      .notice { border-left: 3px solid #13795b; padding-left: 12px; } footer { color: #627184; font-size: 13px; display: flex; gap: 18px; flex-wrap: wrap; } footer a { color: #155e75; }
+      @media (max-width: 760px) { main { padding: 20px 16px 36px; } .flow, .tools { grid-template-columns: 1fr; } }
     </style>
   </head>
-  <body><main>
-    <div class="eyebrow">Arc Testnet · Circle App Kit</div>
-    <h1>Stablecoin payment and treasury workflows built for Arc.</h1>
-    <p class="lead">A non-custodial hackathon workspace for USDC-native payments, merchant settlement, cross-chain routing, and stablecoin FX experiments.</p>
-    <section class="panel"><h2>Explore the product surfaces</h2><div class="links">
-      <a href="/circle/arc/public/arc-treasury-console.html">Arc Treasury Console</a>
-      <a href="/circle/arc/public/arc-merchant-settlement.html">Arc Merchant Settlement</a>
-      <a href="/circle/arc/public/arc-pay-link.html">Arc PayLink</a>
-      <a href="/circle/arc/public/arc-invoice.html">Arc Invoice</a>
-      <a href="/circle/arc/public/arc-crosschain-router.html">Cross-chain Payment Router</a>
-      <a href="/circle/arc/public/arc-stablecoin-fx.html">Stablecoin FX Desk</a>
-    </div></section>
-    <section class="panel"><h2>About this deployment</h2><p class="muted">This is an Arc Testnet demonstration. Wallet actions require MetaMask approval. Never enter private keys, entity secrets, or production credentials into this site.</p></section>
-    <footer><a href="https://github.com/skipio5835/arc-hackathon-export" target="_blank" rel="noreferrer">GitHub repository</a><a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer">ArcScan</a><span>Arc Testnet only</span></footer>
-  </main></body>
+  <body>
+    <main>
+      <header>
+        <div class="brand"><div class="eyebrow">Circle App Kit · Arc</div><h1>Arc Merchant Console</h1><p class="muted">Non-custodial stablecoin payment operations for Arc Testnet.</p></div>
+        <span class="badge">Arc Testnet - USDC gas</span>
+      </header>
+      <section class="panel">
+        <h2>Payment lifecycle</h2>
+        <div class="flow">
+          <div class="flow-item"><span>01 - Collect</span><h3>Invoice or link</h3><p class="muted">Create a wallet-signed USDC payment request.</p></div>
+          <div class="flow-item"><span>02 - Settle</span><h3>Merchant settlement</h3><p class="muted">Record a settlement, payout, or refund with a reference.</p></div>
+          <div class="flow-item"><span>03 - Allocate</span><h3>Revenue split</h3><p class="muted">Route proceeds through the configured onchain flow.</p></div>
+          <div class="flow-item"><span>04 - Verify</span><h3>ArcScan receipt</h3><p class="muted">Keep transaction receipts and local activity history.</p></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Operations</h2>
+        <div class="tools">
+          <a class="tool" href="/circle/arc/public/arc-pay-link.html"><strong>Payment Links</strong><span>Create a reusable wallet-signed payment request.</span></a>
+          <a class="tool" href="/circle/arc/public/arc-invoice.html"><strong>Invoices</strong><span>Create and manage invoice payment flows.</span></a>
+          <a class="tool" href="/circle/arc/public/arc-merchant-settlement.html"><strong>Settlement</strong><span>Settle, refund, or record a merchant payout.</span></a>
+          <a class="tool" href="/circle/arc/public/arc-revenue-splitter.html"><strong>Revenue Split</strong><span>Execute configured multi-party allocation.</span></a>
+          <a class="tool" href="/circle/arc/public/arc-treasury-console.html"><strong>Treasury</strong><span>Review balances and transfer supported stablecoins.</span></a>
+          <a class="tool" href="/circle/arc/public/arc-crosschain-router.html"><strong>Cross-chain Router</strong><span>Use Circle App Kit Bridge and CCTP for USDC routing.</span></a>
+          <a class="tool" href="/circle/arc/public/arc-stablecoin-fx.html"><strong>Stablecoin FX</strong><span>Request a testnet USDC and EURC App Kit Swap quote.</span></a>
+        </div>
+      </section>
+      <section class="panel notice"><h2>Wallet safety</h2><p class="muted">Every value-moving action requires a MetaMask confirmation. This application never requests private keys or entity secrets. App Kit Swap requires a user-provided test Kit Key and does not save it.</p></section>
+      <footer><a href="https://github.com/skipio5835/arc-hackathon-export" target="_blank" rel="noreferrer">GitHub repository</a><a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer">ArcScan</a><span>Testnet demonstration only</span></footer>
+    </main>
+  </body>
 </html>
