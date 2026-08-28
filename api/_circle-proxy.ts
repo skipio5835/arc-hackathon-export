@@ -11,6 +11,11 @@ export type ProxyRule = {
   authorization?: "required" | "forbidden";
 };
 
+export type ProxyService = {
+  baseUrl: string;
+  rules: readonly ProxyRule[];
+};
+
 const allowedMethods = new Set(["GET", "POST", "OPTIONS"]);
 const maxRequestBytes = 100_000;
 const maxResponseBytes = 2_000_000;
@@ -32,10 +37,8 @@ function requestIsSameOrigin(request: IncomingMessage): boolean {
 }
 
 function safePath(value: string): string | null {
-  const segments = value.split("/").filter(Boolean);
-  if (segments.length === 0 || segments.some((segment) => !/^[A-Za-z0-9._~:@-]+$/.test(segment))) {
-    return null;
-  }
+  const segments = value.replace(/^\/+/, "").split("/").filter(Boolean);
+  if (segments.length === 0 || segments.some((segment) => !/^[A-Za-z0-9._~:@-]+$/.test(segment))) return null;
   return segments.join("/");
 }
 
@@ -58,7 +61,7 @@ function matchingRule(method: string, path: string, rules: readonly ProxyRule[])
 }
 
 function hasOnlyAllowedQuery(request: RequestWithQuery, allowed: readonly string[]): boolean {
-  const allowedKeys = new Set(["path", ...allowed]);
+  const allowedKeys = new Set(["service", "target", ...allowed]);
   return Object.entries(request.query ?? {}).every(([key, value]) => {
     const entries = Array.isArray(value) ? value : [value];
     return allowedKeys.has(key) && entries.length <= 2 && entries.every((entry) => !entry || entry.length <= 512);
@@ -71,18 +74,7 @@ function validAuthorization(value: string | undefined, requirement: ProxyRule["a
   return !value || value.length <= 520;
 }
 
-function pathFromRequest(request: RequestWithQuery, sourcePrefix: string, apiPrefix: string): string {
-  const queryPath = first(request.query?.path);
-  if (queryPath) return queryPath;
-
-  const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
-  for (const prefix of [sourcePrefix, apiPrefix]) {
-    if (pathname.startsWith(`${prefix}/`)) return pathname.slice(prefix.length + 1);
-  }
-  return "";
-}
-
-export function createCircleProxy(baseUrl: string, sourcePrefix: string, apiPrefix: string, rules: readonly ProxyRule[]) {
+export function createCircleProxy(services: Readonly<Record<string, ProxyService>>) {
   return async function circleProxy(request: RequestWithQuery, response: ServerResponse): Promise<void> {
     if (request.method === "OPTIONS") {
       response.writeHead(204, { Allow: "GET, POST, OPTIONS" });
@@ -91,25 +83,26 @@ export function createCircleProxy(baseUrl: string, sourcePrefix: string, apiPref
     }
 
     if (!request.method || !allowedMethods.has(request.method)) {
-      response.writeHead(405, { Allow: "GET, POST, OPTIONS" });
+      response.writeHead(405, { Allow: "GET, POST, OPTIONS", "cache-control": "no-store" });
       response.end("Method not allowed");
       return;
     }
 
     if (!requestIsSameOrigin(request)) {
-      response.writeHead(403);
+      response.writeHead(403, { "cache-control": "no-store" });
       response.end("Same-origin requests only");
       return;
     }
 
-    const path = safePath(pathFromRequest(request, sourcePrefix, apiPrefix));
-    if (!path) {
-      response.writeHead(400);
-      response.end("Invalid Circle API path");
+    const service = services[first(request.query?.service)];
+    const path = safePath(first(request.query?.target));
+    if (!service || !path) {
+      response.writeHead(400, { "cache-control": "no-store" });
+      response.end("Invalid Circle proxy target");
       return;
     }
 
-    const rule = matchingRule(request.method, path, rules);
+    const rule = matchingRule(request.method, path, service.rules);
     if (!rule || !hasOnlyAllowedQuery(request, rule.query)) {
       response.writeHead(404, { "cache-control": "no-store" });
       response.end("Circle API route not allowed");
@@ -123,9 +116,9 @@ export function createCircleProxy(baseUrl: string, sourcePrefix: string, apiPref
     }
 
     try {
-      const target = new URL(path, `${baseUrl}/`);
+      const target = new URL(path, `${service.baseUrl}/`);
       for (const [key, value] of Object.entries(request.query ?? {})) {
-        if (key === "path") continue;
+        if (key === "service" || key === "target") continue;
         for (const entry of Array.isArray(value) ? value : [value]) {
           if (entry) target.searchParams.append(key, entry);
         }
@@ -154,7 +147,7 @@ export function createCircleProxy(baseUrl: string, sourcePrefix: string, apiPref
       response.end(payload);
     } catch (error) {
       console.error("Circle proxy request failed", error instanceof Error ? error.name : "UnknownError");
-      response.writeHead(502, { "content-type": "application/json; charset=utf-8" });
+      response.writeHead(502, { "cache-control": "no-store", "content-type": "application/json; charset=utf-8" });
       response.end(JSON.stringify({ error: "Circle proxy request failed" }));
     }
   };

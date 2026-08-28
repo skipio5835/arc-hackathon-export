@@ -133348,7 +133348,14 @@ function routeStablecoinServiceThroughLocalProxy() {
   const originalFetch = globalThis.fetch.bind(globalThis);
   globalThis.fetch = (input, init) => {
     const rawUrl = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-    if (rawUrl.startsWith("https://api.circle.com/v1/stablecoinKits/")) return originalFetch(rawUrl.replace("https://api.circle.com", "/circle-api"), init);
+    if (rawUrl.startsWith("https://api.circle.com/v1/stablecoinKits/")) {
+      const upstream = new URL(rawUrl);
+      if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return originalFetch(`/circle-api${upstream.pathname}${upstream.search}`, init);
+      const query = new URLSearchParams(upstream.search);
+      query.set("service", "stablecoin");
+      query.set("target", upstream.pathname.replace(/^\/+/, ""));
+      return originalFetch(`/api/circle-proxy?${query.toString()}`, init);
+    }
     return originalFetch(input, init);
   };
 }

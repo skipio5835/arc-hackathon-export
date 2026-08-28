@@ -133308,10 +133308,21 @@ function routeBridgeApisThroughLocalProxy() {
   const originalFetch = globalThis.fetch.bind(globalThis);
   globalThis.fetch = (input, init) => {
     const rawUrl = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-    if (rawUrl.startsWith("https://iris-api-sandbox.circle.com/")) return originalFetch(rawUrl.replace("https://iris-api-sandbox.circle.com", "/circle-iris-sandbox"), init);
-    if (rawUrl.startsWith("https://iris-api.circle.com/")) return originalFetch(rawUrl.replace("https://iris-api.circle.com", "/circle-iris"), init);
+    if (rawUrl.startsWith("https://iris-api-sandbox.circle.com/")) return originalFetch(circleProxyUrl(rawUrl, "iris-sandbox"), init);
+    if (rawUrl.startsWith("https://iris-api.circle.com/")) return originalFetch(circleProxyUrl(rawUrl, "iris"), init);
     return originalFetch(input, init);
   };
+}
+function circleProxyUrl(rawUrl, service) {
+  const upstream = new URL(rawUrl);
+  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+    const prefix = service === "iris" ? "/circle-iris" : "/circle-iris-sandbox";
+    return `${prefix}${upstream.pathname}${upstream.search}`;
+  }
+  const query = new URLSearchParams(upstream.search);
+  query.set("service", service);
+  query.set("target", upstream.pathname.replace(/^\/+/, ""));
+  return `/api/circle-proxy?${query.toString()}`;
 }
 routeBridgeApisThroughLocalProxy();
 var el = { connect: document.querySelector("#connect"), direction: document.querySelector("#direction"), source: document.querySelector("#source"), destination: document.querySelector("#destination"), recipient: document.querySelector("#recipient"), amount: document.querySelector("#amount"), speed: document.querySelector("#speed"), estimate: document.querySelector("#estimate"), route: document.querySelector("#route"), sourceBalance: document.querySelector("#sourceBalance"), destinationBalance: document.querySelector("#destinationBalance"), status: document.querySelector("#status"), estimateBox: document.querySelector("#estimateBox"), resultBox: document.querySelector("#resultBox") };

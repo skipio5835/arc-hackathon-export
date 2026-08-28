@@ -18,11 +18,12 @@ function routeBridgeApisThroughLocalProxy(): void {
   const originalFetch = globalThis.fetch.bind(globalThis);
   globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
     const rawUrl = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-    if (rawUrl.startsWith("https://iris-api-sandbox.circle.com/")) return originalFetch(rawUrl.replace("https://iris-api-sandbox.circle.com", "/circle-iris-sandbox"), init);
-    if (rawUrl.startsWith("https://iris-api.circle.com/")) return originalFetch(rawUrl.replace("https://iris-api.circle.com", "/circle-iris"), init);
+    if (rawUrl.startsWith("https://iris-api-sandbox.circle.com/")) return originalFetch(circleProxyUrl(rawUrl, "iris-sandbox"), init);
+    if (rawUrl.startsWith("https://iris-api.circle.com/")) return originalFetch(circleProxyUrl(rawUrl, "iris"), init);
     return originalFetch(input, init);
   };
 }
+function circleProxyUrl(rawUrl: string, service: "iris" | "iris-sandbox"): string { const upstream = new URL(rawUrl); if (location.hostname === "localhost" || location.hostname === "127.0.0.1") { const prefix = service === "iris" ? "/circle-iris" : "/circle-iris-sandbox"; return `${prefix}${upstream.pathname}${upstream.search}`; } const query = new URLSearchParams(upstream.search); query.set("service", service); query.set("target", upstream.pathname.replace(/^\/+/, "")); return `/api/circle-proxy?${query.toString()}`; }
 routeBridgeApisThroughLocalProxy();
 const el = { connect: document.querySelector<HTMLButtonElement>("#connect")!, direction: document.querySelector<HTMLSelectElement>("#direction")!, source: document.querySelector<HTMLElement>("#source")!, destination: document.querySelector<HTMLElement>("#destination")!, recipient: document.querySelector<HTMLInputElement>("#recipient")!, amount: document.querySelector<HTMLInputElement>("#amount")!, speed: document.querySelector<HTMLSelectElement>("#speed")!, estimate: document.querySelector<HTMLButtonElement>("#estimate")!, route: document.querySelector<HTMLButtonElement>("#route")!, sourceBalance: document.querySelector<HTMLElement>("#sourceBalance")!, destinationBalance: document.querySelector<HTMLElement>("#destinationBalance")!, status: document.querySelector<HTMLElement>("#status")!, estimateBox: document.querySelector<HTMLElement>("#estimateBox")!, resultBox: document.querySelector<HTMLElement>("#resultBox")! };
 function currentChains(): { source: Chain; destination: Chain } { return el.direction.value === "to-arc" ? { source: el.source.dataset.chain as Chain, destination: "Arc_Testnet" } : { source: "Arc_Testnet", destination: el.destination.dataset.chain as Chain }; }

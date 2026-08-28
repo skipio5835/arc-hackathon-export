@@ -1,9 +1,4 @@
 {
-  "rewrites": [
-    { "source": "/circle-api/:path*", "destination": "/api/circle-api/:path*" },
-    { "source": "/circle-iris/:path*", "destination": "/api/circle-iris/:path*" },
-    { "source": "/circle-iris-sandbox/:path*", "destination": "/api/circle-iris-sandbox/:path*" }
-  ],
   "headers": [
     {
       "source": "/(.*)",
