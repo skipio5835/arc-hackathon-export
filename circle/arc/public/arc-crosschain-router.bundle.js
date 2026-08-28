@@ -133280,6 +133280,20 @@ async function createViemAdapterFromProvider(params) {
   return await Promise.resolve(adapter2);
 }
 
+// circle/arc/src/browser-security.ts
+init_browser_buffer_global();
+function escapeHtml(value) {
+  return value.replace(/[&<>"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;"
+  })[character] ?? character);
+}
+function validTokenAmount(value, decimals = 6) {
+  return new RegExp(`^(?:0|[1-9]\\d*)(?:\\.\\d{1,${decimals}})?$`).test(value) && Number(value) > 0;
+}
+
 // circle/arc/src/arc-crosschain-router.ts
 var chainMeta = {
   Arc_Testnet: { id: 5042002, name: "Arc Testnet", rpcUrl: "https://rpc.testnet.arc.network", explorerUrl: "https://testnet.arcscan.app", usdcAddress: "0x3600000000000000000000000000000000000000" },
@@ -133294,10 +133308,21 @@ function routeBridgeApisThroughLocalProxy() {
   const originalFetch = globalThis.fetch.bind(globalThis);
   globalThis.fetch = (input, init) => {
     const rawUrl = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-    if (rawUrl.startsWith("https://iris-api-sandbox.circle.com/")) return originalFetch(rawUrl.replace("https://iris-api-sandbox.circle.com", "/circle-iris-sandbox"), init);
-    if (rawUrl.startsWith("https://iris-api.circle.com/")) return originalFetch(rawUrl.replace("https://iris-api.circle.com", "/circle-iris"), init);
+    if (rawUrl.startsWith("https://iris-api-sandbox.circle.com/")) return originalFetch(circleProxyUrl(rawUrl, "iris-sandbox"), init);
+    if (rawUrl.startsWith("https://iris-api.circle.com/")) return originalFetch(circleProxyUrl(rawUrl, "iris"), init);
     return originalFetch(input, init);
   };
+}
+function circleProxyUrl(rawUrl, service) {
+  const upstream = new URL(rawUrl);
+  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+    const prefix = service === "iris" ? "/circle-iris" : "/circle-iris-sandbox";
+    return `${prefix}${upstream.pathname}${upstream.search}`;
+  }
+  const query = new URLSearchParams(upstream.search);
+  query.set("service", service);
+  query.set("target", upstream.pathname.replace(/^\/+/, ""));
+  return `/api/circle-proxy?${query.toString()}`;
 }
 routeBridgeApisThroughLocalProxy();
 var el = { connect: document.querySelector("#connect"), direction: document.querySelector("#direction"), source: document.querySelector("#source"), destination: document.querySelector("#destination"), recipient: document.querySelector("#recipient"), amount: document.querySelector("#amount"), speed: document.querySelector("#speed"), estimate: document.querySelector("#estimate"), route: document.querySelector("#route"), sourceBalance: document.querySelector("#sourceBalance"), destinationBalance: document.querySelector("#destinationBalance"), status: document.querySelector("#status"), estimateBox: document.querySelector("#estimateBox"), resultBox: document.querySelector("#resultBox") };
@@ -133331,8 +133356,10 @@ function bridgeParams() {
   if (!adapter) throw new Error("Connect MetaMask first.");
   const { source, destination } = currentChains();
   const recipient = el.recipient.value.trim() || address;
-  if (!recipient) throw new Error("Recipient address is required.");
-  return { from: { adapter, chain: source }, to: { adapter, chain: destination, recipientAddress: recipient }, amount: el.amount.value.trim(), token: "USDC", config: { transferSpeed: el.speed.value, batchTransactions: false } };
+  const amount = el.amount.value.trim();
+  if (!isAddress(recipient)) throw new Error("Enter a valid recipient address.");
+  if (!validTokenAmount(amount)) throw new Error("Enter a positive amount with up to 6 decimal places.");
+  return { from: { adapter, chain: source }, to: { adapter, chain: destination, recipientAddress: recipient }, amount, token: "USDC", config: { transferSpeed: el.speed.value, batchTransactions: false } };
 }
 function createClient2(chain2) {
   const meta = chainMeta[chain2];
@@ -133366,16 +133393,26 @@ async function connect() {
   setStatus("Ready. Review the route before signing.");
 }
 function renderEstimate(estimate3) {
-  el.estimateBox.innerHTML = `<div><strong>Amount</strong><span>${estimate3.amount} ${estimate3.token}</span></div><div><strong>Route</strong><span>${estimate3.source.chain} \u2192 ${estimate3.destination.chain}</span></div><div><strong>Fees</strong><span>${estimate3.fees.map((fee) => `${fee.type}: ${fee.amount ?? "n/a"} ${fee.token}`).join(", ") || "-"}</span></div>`;
+  el.estimateBox.innerHTML = `<div><strong>Amount</strong><span>${escapeHtml(`${estimate3.amount} ${estimate3.token}`)}</span></div><div><strong>Route</strong><span>${escapeHtml(`${estimate3.source.chain} to ${estimate3.destination.chain}`)}</span></div><div><strong>Fees</strong><span>${escapeHtml(estimate3.fees.map((fee) => `${fee.type}: ${fee.amount ?? "n/a"} ${fee.token}`).join(", ") || "-")}</span></div>`;
 }
 function renderResult(result) {
-  el.resultBox.innerHTML = `<div><strong>State</strong><span>${result.state}</span></div><div><strong>Source</strong><span>${result.source.chain.chain}</span></div><div><strong>Destination</strong><span>${result.destination.chain.chain}</span></div>${result.steps.map((step2) => `<div><strong>${step2.name}</strong><span>${step2.state} \xB7 ${step2.txHash ?? "pending"}</span>${step2.txHash ? `<a href="${chainMeta[currentChains().source].explorerUrl}/tx/${step2.txHash}" target="_blank" rel="noreferrer">ArcScan / explorer</a>` : ""}</div>`).join("")}`;
+  const explorer = chainMeta[currentChains().source].explorerUrl;
+  el.resultBox.innerHTML = `<div><strong>State</strong><span>${escapeHtml(result.state)}</span></div><div><strong>Source</strong><span>${escapeHtml(result.source.chain.chain)}</span></div><div><strong>Destination</strong><span>${escapeHtml(result.destination.chain.chain)}</span></div>${result.steps.map((step2) => {
+    const hash5 = step2.txHash && /^0x[A-Fa-f0-9]{64}$/.test(step2.txHash) ? step2.txHash : void 0;
+    return `<div><strong>${escapeHtml(step2.name)}</strong><span>${escapeHtml(`${step2.state} - ${hash5 ?? "pending"}`)}</span>${hash5 ? `<a href="${explorer}/tx/${hash5}" target="_blank" rel="noreferrer">Source explorer</a>` : ""}</div>`;
+  }).join("")}`;
   localStorage.setItem("ArcCrosschainRouter.lastRoute", JSON.stringify(result, (_key, value) => typeof value === "bigint" ? value.toString() : value));
+}
+async function switchToSourceNetwork() {
+  if (!window.ethereum) throw new Error("MetaMask provider not found.");
+  const { source } = currentChains();
+  await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: `0x${chainMeta[source].id.toString(16)}` }] });
 }
 async function estimate2() {
   if (!adapter) await connect();
   setStatus("Estimating cross-chain route...");
   try {
+    await switchToSourceNetwork();
     renderEstimate(await kit.estimateBridge(bridgeParams()));
     setStatus("Estimate ready. No transaction has been submitted.");
   } catch (error) {
@@ -133387,6 +133424,7 @@ async function route() {
   if (!adapter) await connect();
   el.route.disabled = true;
   try {
+    await switchToSourceNetwork();
     setStatus("Waiting for MetaMask approval and burn/mint signatures...");
     const params = bridgeParams();
     await kit.estimateBridge(params);

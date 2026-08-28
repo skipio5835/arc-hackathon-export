@@ -10,6 +10,7 @@ import {
 } from "viem";
 import type { Address, EIP1193Provider, Hash } from "viem";
 import { ARC_TESTNET, ARC_TESTNET_CHAIN } from "./arc-network";
+import { assertWalletContext, escapeHtml, readStoredArray, validTokenAmount } from "./browser-security";
 
 declare global {
   interface Window {
@@ -54,9 +55,9 @@ function setStatus(message: string, hash?: Hash): void {
 }
 
 function renderActivity(): void {
-  const rows = JSON.parse(localStorage.getItem(activityKey) ?? "[]") as Activity[];
+  const rows = readStoredArray<Activity>(activityKey);
   el.activity.innerHTML = rows.length
-    ? rows.map((row) => `<li><strong>${row.token} ${row.amount}</strong> to <code>${row.recipient}</code><br><a href="${ARC_TESTNET.explorerUrl}/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><span>${new Date(row.createdAt).toLocaleString()}</span></li>`).join("")
+    ? rows.map((row) => `<li><strong>${escapeHtml(row.token)} ${escapeHtml(row.amount)}</strong> to <code>${escapeHtml(row.recipient)}</code><br><a href="${ARC_TESTNET.explorerUrl}/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><span>${new Date(row.createdAt).toLocaleString()}</span></li>`).join("")
     : "<li class=\"empty\">No local transfers recorded yet.</li>";
 }
 
@@ -88,11 +89,13 @@ async function refreshBalances(): Promise<void> {
 async function sendToken(): Promise<void> {
   if (!wallet || !account) await connect();
   if (!wallet || !account) throw new Error("Wallet connection failed.");
+  if (!provider) throw new Error("MetaMask provider not found.");
+  await assertWalletContext(provider, ARC_TESTNET.chainIdHex, account);
   const recipient = el.recipient.value.trim();
   const symbol = el.token.value as keyof typeof tokens;
   const amount = el.amount.value.trim();
   if (!isAddress(recipient)) throw new Error("Enter a valid recipient address.");
-  if (!amount || Number(amount) <= 0) throw new Error("Enter a positive amount.");
+  if (!validTokenAmount(amount)) throw new Error("Enter a positive amount with up to 6 decimal places.");
   if (symbol === "USYC") throw new Error("USYC is read-only in this console because access is restricted.");
   const token = tokens[symbol];
   setStatus(`Waiting for MetaMask: send ${symbol}...`);
@@ -105,7 +108,7 @@ async function sendToken(): Promise<void> {
     args: [recipient as Address, parseUnits(amount, token.decimals)],
   });
   await publicClient.waitForTransactionReceipt({ hash });
-  const rows = JSON.parse(localStorage.getItem(activityKey) ?? "[]") as Activity[];
+  const rows = readStoredArray<Activity>(activityKey);
   rows.unshift({ token: symbol, amount, recipient, hash, createdAt: new Date().toISOString() });
   localStorage.setItem(activityKey, JSON.stringify(rows.slice(0, 12)));
   renderActivity();

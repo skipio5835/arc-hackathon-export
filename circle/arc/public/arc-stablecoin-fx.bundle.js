@@ -133313,6 +133313,28 @@ function escapeHtml(value) {
     '"': "&quot;"
   })[character] ?? character);
 }
+function validTokenAmount(value, decimals = 6) {
+  return new RegExp(`^(?:0|[1-9]\\d*)(?:\\.\\d{1,${decimals}})?$`).test(value) && Number(value) > 0;
+}
+function safeExplorerUrl(value, fallback2, allowedHost) {
+  if (!value) return fallback2;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.host === allowedHost ? url.toString() : fallback2;
+  } catch {
+    return fallback2;
+  }
+}
+async function assertWalletContext(provider, expectedChainId, expectedAccount) {
+  const [chainId, accounts] = await Promise.all([
+    provider.request({ method: "eth_chainId" }),
+    provider.request({ method: "eth_accounts" })
+  ]);
+  if (chainId.toLowerCase() !== expectedChainId.toLowerCase()) throw new Error("Switch MetaMask to Arc Testnet.");
+  if (!accounts[0] || accounts[0].toLowerCase() !== expectedAccount.toLowerCase()) {
+    throw new Error("The active MetaMask account changed. Reconnect the wallet.");
+  }
+}
 
 // circle/arc/src/arc-stablecoin-fx.ts
 var arc2 = ARC_TESTNET_CHAIN;
@@ -133326,7 +133348,14 @@ function routeStablecoinServiceThroughLocalProxy() {
   const originalFetch = globalThis.fetch.bind(globalThis);
   globalThis.fetch = (input, init) => {
     const rawUrl = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-    if (rawUrl.startsWith("https://api.circle.com/v1/stablecoinKits/")) return originalFetch(rawUrl.replace("https://api.circle.com", "/circle-api"), init);
+    if (rawUrl.startsWith("https://api.circle.com/v1/stablecoinKits/")) {
+      const upstream = new URL(rawUrl);
+      if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return originalFetch(`/circle-api${upstream.pathname}${upstream.search}`, init);
+      const query = new URLSearchParams(upstream.search);
+      query.set("service", "stablecoin");
+      query.set("target", upstream.pathname.replace(/^\/+/, ""));
+      return originalFetch(`/api/circle-proxy?${query.toString()}`, init);
+    }
     return originalFetch(input, init);
   };
 }
@@ -133343,7 +133372,9 @@ function key() {
 function params() {
   if (!adapter) throw new Error("Connect MetaMask first.");
   if (el.from.value === el.to.value) throw new Error("Choose different currencies.");
-  return { from: { adapter, chain: "Arc_Testnet" }, tokenIn: el.from.value, tokenOut: el.to.value, amountIn: el.amount.value.trim(), config: { kitKey: key(), slippageBps: 100, allowanceStrategy: "approve" } };
+  const amount = el.amount.value.trim();
+  if (!validTokenAmount(amount)) throw new Error("Enter a positive amount with up to 6 decimal places.");
+  return { from: { adapter, chain: "Arc_Testnet" }, tokenIn: el.from.value, tokenOut: el.to.value, amountIn: amount, config: { kitKey: key(), slippageBps: 100, allowanceStrategy: "approve" } };
 }
 async function balance(symbol) {
   const token = tokens2[symbol];
@@ -133373,14 +133404,20 @@ function renderQuote(value) {
   el.quoteBox.innerHTML = `<div><strong>Pair</strong><span>${escapeHtml(`${value.estimatedOutput.token} received for ${value.stopLimit.token} sold`)}</span></div><div><strong>Estimated output</strong><span>${escapeHtml(`${value.estimatedOutput.amount} ${value.estimatedOutput.token}`)}</span></div><div><strong>Stop limit</strong><span>${escapeHtml(`${value.stopLimit.amount} ${value.stopLimit.token}`)}</span></div><div><strong>Fees</strong><span>${escapeHtml(value.fees?.map((fee) => `${fee.type}: ${fee.amount} ${fee.token}`).join(", ") || "-")}</span></div>`;
 }
 function renderResult(value) {
-  const receiptUrl = value.explorerUrl ?? `${ARC_TESTNET.explorerUrl}/tx/${value.txHash}`;
+  const fallback2 = `${ARC_TESTNET.explorerUrl}/tx/${value.txHash}`;
+  const receiptUrl = safeExplorerUrl(value.explorerUrl, fallback2, "testnet.arcscan.app");
   el.resultBox.innerHTML = `<div><strong>Input</strong><span>${escapeHtml(`${value.amountIn} ${value.tokenIn}`)}</span></div><div><strong>Output</strong><span>${escapeHtml(`${value.amountOut ?? "-"} ${value.tokenOut}`)}</span></div><div><strong>Transaction</strong><span>${escapeHtml(value.txHash)}</span></div><a href="${escapeHtml(receiptUrl)}" target="_blank" rel="noreferrer">View ArcScan receipt</a>`;
   localStorage.setItem("ArcStablecoinFX.lastTrade", JSON.stringify(value, (_key, entry) => typeof entry === "bigint" ? entry.toString() : entry));
+}
+async function verifyWallet() {
+  if (!window.ethereum || !address) throw new Error("Connect MetaMask first.");
+  await assertWalletContext(window.ethereum, ARC_TESTNET.chainIdHex, address);
 }
 async function estimate2() {
   if (!adapter) await connect();
   setStatus("Requesting FX quote...");
   try {
+    await verifyWallet();
     renderQuote(await kit.estimateSwap(params()));
     setStatus("Quote ready. No transaction submitted.");
   } catch (error) {
@@ -133391,6 +133428,7 @@ async function execute() {
   if (!adapter) await connect();
   el.execute.disabled = true;
   try {
+    await verifyWallet();
     setStatus("Waiting for MetaMask approval and swap signature...");
     const value = await kit.swap(params());
     renderResult(value);
