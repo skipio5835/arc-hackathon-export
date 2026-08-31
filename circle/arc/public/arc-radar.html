@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Live Arc Testnet meme-token prices, liquidity, trading flow, holder concentration, and exit risk." />
+    <title>Arc Meme Radar</title>
+    <link rel="preconnect" href="https://testnet.arcscan.app" />
+    <link rel="stylesheet" href="./arc-radar.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="shell header-main">
+        <a class="brand" href="#markets" aria-label="Arc Meme Radar markets">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span class="brand-copy"><strong>Arc Meme Radar</strong><small>Testnet</small></span>
+        </a>
+        <form class="search-form" id="searchForm" role="search">
+          <label class="sr-only" for="searchInput">Search token or contract</label>
+          <input id="searchInput" type="search" autocomplete="off" placeholder="Search token, symbol, or contract" />
+          <button type="submit">Search</button>
+        </form>
+        <button class="refresh-button" id="refreshButton" type="button">Refresh</button>
+      </div>
+      <div class="shell status-row">
+        <span class="live-dot" aria-hidden="true"></span>
+        <strong>Arc Testnet live markets</strong>
+        <span id="lastUpdated">Connecting...</span>
+        <a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer">ArcScan</a>
+      </div>
+    </header>
+
+    <div class="notice hidden" id="dataNotice" role="status" aria-live="polite"></div>
+
+    <main class="shell trader-layout" id="markets">
+      <section class="market-pulse" aria-labelledby="marketPulseTitle">
+        <header class="pulse-heading">
+          <div><p class="eyebrow">Market pulse</p><h2 id="marketPulseTitle">Newest Arc markets</h2></div>
+          <p id="pulseStatus">Reading the last 24 hours...</p>
+        </header>
+        <div class="pulse-metrics">
+          <div><span>24H volume</span><strong id="pulseVolume">--</strong><small>USDC pool flow</small></div>
+          <div><span>24H buys / sells</span><strong id="pulseTrades">--</strong><small>indexed swaps</small></div>
+          <div><span>Net flow</span><strong id="pulseNetFlow">--</strong><small>buy minus sell</small></div>
+          <div><span>Newest pool</span><strong id="pulseNewest">--</strong><small id="pulseNewestAge">--</small></div>
+          <div><span>Sell observed</span><strong id="pulseSellVerified">--</strong><small>markets with an indexed sell</small></div>
+        </div>
+      </section>
+
+      <section class="market-board">
+        <header class="board-header">
+          <div>
+            <p class="eyebrow">Token markets</p>
+            <h1>Newest Arc meme pools</h1>
+            <p id="marketSummary">Loading live pools...</p>
+          </div>
+          <div class="market-filters" role="group" aria-label="Filter token markets">
+            <button class="filter-button active" type="button" data-market-filter="all" aria-pressed="true">All</button>
+            <button class="filter-button" type="button" data-market-filter="watchlist" aria-pressed="false">Watchlist</button>
+            <button class="filter-button" type="button" data-market-filter="active" aria-pressed="false">Moving 24H</button>
+            <button class="filter-button" type="button" data-market-filter="new" aria-pressed="false">New</button>
+            <button class="filter-button" type="button" data-market-filter="sells" aria-pressed="false">Sell seen</button>
+            <button class="filter-button" type="button" data-market-filter="risky" aria-pressed="false">Risky</button>
+          </div>
+        </header>
+
+        <div class="market-column-head" aria-hidden="true">
+          <span>Token</span><span>Price</span><span>Market pulse</span><span>Liquidity</span><span>Buys / Sells</span><span>Age</span>
+        </div>
+        <div class="market-rows" id="marketRows" aria-live="polite">
+          <div class="market-loading-row">Reading pools and recent trades...</div>
+        </div>
+      </section>
+
+      <aside class="token-panel" aria-live="polite">
+        <div class="detail-empty" id="marketDetailEmpty">
+          <span class="empty-pulse" aria-hidden="true"></span>
+          <div><strong>Select a token</strong><p>Price, flow, ownership, and exit risk will appear here.</p></div>
+        </div>
+        <div class="detail-loading hidden" id="marketDetailLoading">
+          <span class="loader" aria-hidden="true"></span>
+          <div><strong>Checking the token</strong><p>Reading holders, liquidity, and trading controls.</p></div>
+        </div>
+        <div class="detail-content hidden" id="marketDetailContent">
+          <header class="token-header">
+            <div class="token-identity">
+              <span class="token-mark" id="marketTokenMark" aria-hidden="true">?</span>
+              <div>
+                <h2 id="marketTokenName">Token</h2>
+                <p><span id="marketTokenSymbol">--</span><a id="marketTokenAddress" href="https://testnet.arcscan.app" target="_blank" rel="noreferrer">--</a></p>
+              </div>
+            </div>
+            <div class="token-header-actions">
+              <button class="watch-toggle" id="watchToggle" type="button" aria-label="Add token to watchlist" aria-pressed="false" title="Add to watchlist"><span id="watchIcon" aria-hidden="true">☆</span></button>
+              <span class="risk-badge" id="riskBadge">Checking</span>
+            </div>
+          </header>
+
+          <section class="key-metrics" aria-label="Selected token market metrics">
+            <div><span>Price</span><strong id="detailPrice">--</strong><small id="detailPriceChange">--</small></div>
+            <div><span>FDV</span><strong id="detailFdv">--</strong><small>fully diluted</small></div>
+            <div><span>Liquidity</span><strong id="detailLiquidity">--</strong><small id="detailLiquidityNote">--</small></div>
+            <div><span>Holders</span><strong id="detailHolders">--</strong><small>indexed addresses</small></div>
+          </section>
+
+          <section class="alert-section hidden" id="observedAlertSection">
+            <div class="section-title"><div><p class="eyebrow">Watchlist</p><h3>Observed changes</h3></div><strong id="observedAlertCount">--</strong></div>
+            <div class="observed-alert-list" id="observedAlertList"></div>
+            <p class="observed-alert-note" id="observedAlertNote">Stored in this browser.</p>
+          </section>
+
+          <section class="price-section">
+            <div class="section-title">
+              <div><p class="eyebrow">Pool price</p><h3>Indexed price path</h3></div>
+              <strong id="priceChange">--</strong>
+            </div>
+            <div class="window-metrics" aria-label="Price and trading windows">
+              <div><span>5M</span><strong id="window5mChange">--</strong><small id="window5mFlow">--</small></div>
+              <div><span>1H</span><strong id="window1hChange">--</strong><small id="window1hFlow">--</small></div>
+              <div><span>6H</span><strong id="window6hChange">--</strong><small id="window6hFlow">--</small></div>
+              <div><span>24H</span><strong id="window24hChange">--</strong><small id="window24hFlow">--</small></div>
+            </div>
+            <svg id="priceChart" role="img" aria-label="Recent indexed pool price path" viewBox="0 0 440 180" preserveAspectRatio="none"></svg>
+            <p class="chart-note" id="priceWindow">Waiting for reserve updates...</p>
+          </section>
+
+          <section class="flow-section">
+            <div class="section-title"><div><p class="eyebrow">Last 24 hours</p><h3>Recent market flow</h3></div></div>
+            <div class="flow-metrics">
+              <div><span>Buys</span><strong class="positive" id="detailBuys">--</strong></div>
+              <div><span>Sells</span><strong class="negative" id="detailSells">--</strong></div>
+              <div><span>Volume</span><strong id="detailVolume">--</strong></div>
+              <div><span>Last trade</span><strong id="detailLastTrade">--</strong></div>
+            </div>
+            <div class="detail-flow-track" aria-hidden="true"><span id="detailBuyBar"></span><span id="detailSellBar"></span></div>
+          </section>
+
+          <section class="trade-section">
+            <div class="section-title"><div><p class="eyebrow">Visible transactions</p><h3>Recent trade tape</h3></div><strong id="detailTradeCount">--</strong></div>
+            <div class="trade-list" id="tradeList"></div>
+          </section>
+
+          <section class="wallet-section">
+            <div class="section-title"><div><p class="eyebrow">Wallet intelligence</p><h3>Wallet signals</h3></div><strong id="walletSignalCount">--</strong></div>
+            <div class="wallet-signal-metrics" aria-label="Wallet signal summary">
+              <div><span>Pool creator</span><strong id="walletCreatorMoves">--</strong><small>moves</small></div>
+              <div><span>Whales</span><strong id="walletWhaleMoves">--</strong><small>top / large</small></div>
+              <div><span>Entries</span><strong id="walletEntries">--</strong><small>first seen</small></div>
+              <div><span>Full exits</span><strong id="walletExits">--</strong><small>zero balance</small></div>
+            </div>
+            <div class="wallet-filters" role="group" aria-label="Filter wallet signals">
+              <button class="wallet-filter active" type="button" data-wallet-filter="all" aria-pressed="true">All</button>
+              <button class="wallet-filter" type="button" data-wallet-filter="creator" aria-pressed="false">Pool creator</button>
+              <button class="wallet-filter" type="button" data-wallet-filter="whale" aria-pressed="false">Whales</button>
+              <button class="wallet-filter" type="button" data-wallet-filter="entry" aria-pressed="false">Entries</button>
+              <button class="wallet-filter" type="button" data-wallet-filter="exit" aria-pressed="false">Exits</button>
+            </div>
+            <div class="wallet-signal-list" id="walletSignalList"></div>
+            <p class="wallet-signal-note" id="walletSignalNote">Reading indexed transfer coverage...</p>
+          </section>
+
+          <section class="liquidity-section">
+            <div class="section-title"><div><p class="eyebrow">Pool safety</p><h3>Liquidity monitor</h3></div><strong id="liquidityEventCount">--</strong></div>
+            <div class="liquidity-metrics" aria-label="Liquidity event summary">
+              <div><span>Exit side</span><strong id="liquidityCurrent">--</strong><small>USDC now</small></div>
+              <div><span>24H added</span><strong id="liquidityAdded">--</strong><small>USDC</small></div>
+              <div><span>24H removed</span><strong id="liquidityRemoved">--</strong><small>USDC</small></div>
+              <div><span>LP burned</span><strong id="liquidityBurned">--</strong><small>of LP supply</small></div>
+            </div>
+            <p class="liquidity-status" id="liquidityLpStatus">Reading LP ownership...</p>
+            <div class="liquidity-event-list" id="liquidityEventList"></div>
+            <p class="liquidity-note">Pool changes are calculated from indexed Mint, Burn, and Sync events.</p>
+          </section>
+
+          <section class="holder-section">
+            <div class="section-title"><div><p class="eyebrow">Ownership</p><h3>Holder distribution</h3></div><strong id="holderCountSummary">--</strong></div>
+            <div class="holder-concentration" aria-label="Holder concentration excluding pool and burn addresses">
+              <div><span>Top 1</span><strong id="holderTop1">--</strong><small>of supply</small></div>
+              <div><span>Top 5</span><strong id="holderTop5">--</strong><small>of supply</small></div>
+              <div><span>Top 10</span><strong id="holderTop10">--</strong><small>of supply</small></div>
+              <div><span>Pool creator</span><strong id="holderCreator">--</strong><small>current bag</small></div>
+            </div>
+            <p class="holder-note" id="holderSupplyNote">Pool -- · Burned -- · rankings exclude both.</p>
+            <div class="holder-list" id="holderList"></div>
+          </section>
+
+          <section class="cluster-section">
+            <div class="section-title"><div><p class="eyebrow">On-chain relationships</p><h3>Holder connections</h3></div><strong id="holderClusterSummary">--</strong></div>
+            <div class="cluster-metrics" aria-label="Holder connection summary">
+              <div><span>Connections</span><strong id="clusterConnections">--</strong><small>indexed links</small></div>
+              <div><span>Connected</span><strong id="clusterWallets">--</strong><small>top holders</small></div>
+              <div><span>Clusters</span><strong id="clusterCount">--</strong><small>linked groups</small></div>
+              <div><span>Largest</span><strong id="clusterLargest">--</strong><small>of supply</small></div>
+            </div>
+            <div class="holder-cluster-map" id="holderClusterMap"></div>
+            <div class="holder-connection-list" id="holderConnectionList"></div>
+            <p class="cluster-note">Connections mean an indexed direct transfer or a shared non-contract source. They do not prove common ownership.</p>
+          </section>
+
+          <section class="risk-section">
+            <div class="section-title"><div><p class="eyebrow">Risk check</p><h3>What can hurt the trade</h3></div><strong id="warningCount">--</strong></div>
+            <div class="warning-list" id="marketWarnings"></div>
+          </section>
+
+          <section class="exit-section">
+            <div class="section-title"><div><p class="eyebrow">Exit pressure</p><h3>Sell-size impact</h3></div><strong id="exitEstimate">--</strong></div>
+            <svg id="exitCurve" role="img" aria-label="Estimated price impact when selling a percentage of token supply" viewBox="0 0 440 170" preserveAspectRatio="none"></svg>
+            <div class="exit-axis"><span>0.1% supply</span><span>5% supply</span></div>
+            <p class="chart-note">Pool estimate only. Token taxes or transfer limits may make the actual result worse.</p>
+          </section>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      <div class="shell footer-inner">
+        <strong>Arc Meme Radar</strong>
+        <p>Read-only testnet market data. No token is endorsed and no safety result is guaranteed.</p>
+      </div>
+    </footer>
+
+    <script type="module" src="./arc-radar.bundle.js"></script>
+  </body>
+</html>

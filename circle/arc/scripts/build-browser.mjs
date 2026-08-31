@@ -59,6 +59,7 @@ export default https;`,
 ]);
 
 const targets = {
+  "arc-radar": ["circle/arc/src/arc-radar.ts", "circle/arc/public/arc-radar.bundle.js"],
   "appkit-send": ["circle/arc/src/appkit-send.ts", "circle/arc/public/appkit-send.bundle.js"],
   "appkit-swap": ["circle/arc/src/appkit-swap.ts", "circle/arc/public/appkit-swap.bundle.js"],
   "appkit-bridge": ["circle/arc/src/appkit-bridge.ts", "circle/arc/public/appkit-bridge.bundle.js"],
@@ -166,6 +167,15 @@ function resolveExports(exportsField, subpath) {
 }
 
 function resolveFileOrDirectory(candidate) {
+  const explicitExtension = path.extname(candidate);
+  if ([".js", ".mjs", ".cjs"].includes(explicitExtension) && !fs.existsSync(candidate)) {
+    const withoutExtension = candidate.slice(0, -explicitExtension.length);
+    for (const sourceExtension of [".ts", ".tsx"]) {
+      const sourcePath = `${withoutExtension}${sourceExtension}`;
+      if (fs.existsSync(sourcePath) && fs.statSync(sourcePath).isFile()) return sourcePath;
+    }
+  }
+
   const extensions = ["", ".ts", ".tsx", ".mjs", ".js", ".cjs", ".json"];
 
   for (const extension of extensions) {

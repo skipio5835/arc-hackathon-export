@@ -3,6 +3,11 @@
 Circle Arc Testnet workspace for deploying and exercising audited-style payment
 and product-flow contracts with MetaMask-signed transactions.
 
+The repository also includes Arc Meme Radar, a read-only market intelligence
+interface for new Arc Testnet token pools. It turns ArcScan data into USDC pool
+prices, liquidity movement, trading flow, holder concentration, wallet signals,
+and exit-pressure estimates without requesting a wallet connection.
+
 ## Scope
 
 - `circle/arc/contracts`: Solidity contracts for invoice, escrow, marketplace,
@@ -12,7 +17,7 @@ and product-flow contracts with MetaMask-signed transactions.
   usage billing, streaming payroll, refundable payments, treasury operations,
   merchant settlement, cross-chain routing, stablecoin FX, and related flows.
 - `circle/arc/src`: TypeScript browser clients for Circle App Kit, CCTP, token
-  transfers, and Arc contract UIs.
+  transfers, Arc contract UIs, and Arc Meme Radar market analysis.
 - `circle/arc/public`: Local HTML tools and prebuilt browser bundles.
 - `circle/arc/scripts`: Compile, local server, deployment, verification, and
   demo checklist helper scripts.
@@ -54,6 +59,8 @@ npm.cmd run build-arc-treasury-console
 npm.cmd run build-arc-merchant-settlement
 npm.cmd run build-arc-crosschain-router
 npm.cmd run build-arc-stablecoin-fx
+npm.cmd run build-arc-radar
+npm.cmd run test-arc-radar
 npm.cmd run typecheck
 ```
 
