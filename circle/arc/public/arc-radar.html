@@ -3,18 +3,26 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Live Arc Testnet meme-token prices, liquidity, trading flow, holder concentration, and exit risk." />
-    <title>Arc Meme Radar</title>
+    <meta name="description" content="ARCROW provides live Arc meme-market prices, liquidity, trading flow, holder concentration, and exit risk." />
+    <title>ARCROW | Arc Meme Intelligence</title>
+    <link rel="icon" type="image/png" href="./assets/arcrow-mark.png" />
     <link rel="preconnect" href="https://testnet.arcscan.app" />
     <link rel="stylesheet" href="./arc-radar.css" />
   </head>
   <body>
     <header class="app-header">
       <div class="shell header-main">
-        <a class="brand" href="#markets" aria-label="Arc Meme Radar markets">
-          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-          <span class="brand-copy"><strong>Arc Meme Radar</strong><small>Testnet</small></span>
-        </a>
+        <div class="identity-lockup">
+          <a class="brand" href="#markets" aria-label="ARCROW markets">
+            <span class="brand-mark" aria-hidden="true"><img src="./assets/arcrow-mark.png" alt="" /></span>
+            <span class="brand-copy"><strong>ARCROW</strong><small>Meme Intelligence</small></span>
+          </a>
+          <a class="network-lockup" href="https://www.arc.network/" target="_blank" rel="noreferrer" aria-label="Visit the Arc network website">
+            <span>NETWORK</span>
+            <strong>ARC</strong>
+            <small>TESTNET</small>
+          </a>
+        </div>
         <form class="search-form" id="searchForm" role="search">
           <label class="sr-only" for="searchInput">Search token or contract</label>
           <input id="searchInput" type="search" autocomplete="off" placeholder="Search token, symbol, or contract" />
@@ -24,8 +32,10 @@
       </div>
       <div class="shell status-row">
         <span class="live-dot" aria-hidden="true"></span>
-        <strong>Arc Testnet live markets</strong>
+        <strong>ARC TESTNET MARKET FEED</strong>
+        <span class="chain-id">CHAIN 5042002</span>
         <span id="lastUpdated">Connecting...</span>
+        <span class="independent-label">INDEPENDENT ANALYTICS</span>
         <a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer">ArcScan</a>
       </div>
     </header>
@@ -35,7 +45,8 @@
     <main class="shell trader-layout" id="markets">
       <section class="market-pulse" aria-labelledby="marketPulseTitle">
         <header class="pulse-heading">
-          <div><p class="eyebrow">Market pulse</p><h2 id="marketPulseTitle">Newest Arc markets</h2></div>
+          <img class="pulse-watermark" src="./assets/arcrow-mark.png" alt="" aria-hidden="true" />
+          <div><p class="eyebrow">ARCROW / ARC TESTNET</p><h2 id="marketPulseTitle">Live meme market</h2></div>
           <p id="pulseStatus">Reading the last 24 hours...</p>
         </header>
         <div class="pulse-metrics">
@@ -50,8 +61,8 @@
       <section class="market-board">
         <header class="board-header">
           <div>
-            <p class="eyebrow">Token markets</p>
-            <h1>Newest Arc meme pools</h1>
+            <p class="eyebrow">ARCROW DISCOVERY</p>
+            <h1>Arc meme markets</h1>
             <p id="marketSummary">Loading live pools...</p>
           </div>
           <div class="market-filters" role="group" aria-label="Filter token markets">
@@ -214,8 +225,8 @@
 
     <footer>
       <div class="shell footer-inner">
-        <strong>Arc Meme Radar</strong>
-        <p>Read-only testnet market data. No token is endorsed and no safety result is guaranteed.</p>
+        <div class="footer-brand"><strong>ARCROW</strong><span>ARC MEME INTELLIGENCE</span><small>ON ARC TESTNET</small></div>
+        <p>Independent read-only analytics. Not affiliated with Circle or Arc. No token is endorsed and no safety result is guaranteed.</p>
       </div>
     </footer>
 

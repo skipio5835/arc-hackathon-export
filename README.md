@@ -3,7 +3,7 @@
 Circle Arc Testnet workspace for deploying and exercising audited-style payment
 and product-flow contracts with MetaMask-signed transactions.
 
-The repository also includes Arc Meme Radar, a read-only market intelligence
+The repository also includes ARCROW (Arc Meme Intelligence), a read-only market intelligence
 interface for new Arc Testnet token pools. It turns ArcScan data into USDC pool
 prices, liquidity movement, trading flow, holder concentration, wallet signals,
 and exit-pressure estimates without requesting a wallet connection.
@@ -17,7 +17,7 @@ and exit-pressure estimates without requesting a wallet connection.
   usage billing, streaming payroll, refundable payments, treasury operations,
   merchant settlement, cross-chain routing, stablecoin FX, and related flows.
 - `circle/arc/src`: TypeScript browser clients for Circle App Kit, CCTP, token
-  transfers, Arc contract UIs, and Arc Meme Radar market analysis.
+  transfers, Arc contract UIs, and ARCROW market analysis.
 - `circle/arc/public`: Local HTML tools and prebuilt browser bundles.
 - `circle/arc/scripts`: Compile, local server, deployment, verification, and
   demo checklist helper scripts.
@@ -38,6 +38,12 @@ Then open the printed local URLs and approve MetaMask prompts manually for the
 flows you want to demonstrate.
 
 ## Vercel Deployment
+
+The existing [Merchant Console](https://arc-hackathon-export.vercel.app/) remains
+the main demo. [ARCROW](https://arc-hackathon-export.vercel.app/circle/arc/public/arc-radar.html)
+is an additional market intelligence page. It runs in the browser and reads
+public ArcScan API data directly; no local server, wallet, or API key is required.
+Market coverage and freshness depend on the public testnet indexer.
 
 The public deployment includes same-origin Vercel proxy routes for the Circle
 endpoints used by App Kit Bridge and Swap. They forward only to fixed Circle API

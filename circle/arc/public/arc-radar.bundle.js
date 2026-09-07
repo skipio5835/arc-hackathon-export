@@ -6,11 +6,20 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __esm = (fn, res) => function __init() {
-  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+var __esm = (fn, res, err) => function __init() {
+  if (err) throw err[0];
+  try {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  } catch (e) {
+    throw err = [e], e;
+  }
 };
 var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  try {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  } catch (e) {
+    throw mod = 0, e;
+  }
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -2779,11 +2788,11 @@ function detectCapabilities(address, contract) {
   const names = functions.map((entry) => entry.name ?? "");
   const capabilities = [];
   const has = (pattern) => names.some((name) => pattern.test(name));
-  if (has(/^mint|mintTo|increaseSupply|issue/i)) capabilities.push("mint");
+  if (has(/^(?:mint|mintTo|increaseSupply|issue)/i)) capabilities.push("mint");
   if (has(/blacklist|blocklist|denylist|freeze|wipe|seize/i)) capabilities.push("restrict");
   if (has(/^pause$|^unpause$|setPaused|emergencyPause/i)) capabilities.push("pause");
   if (address?.proxy_type || has(/upgrade|changeAdmin|setImplementation|updateImplementation/i)) capabilities.push("upgrade");
-  if (has(/^(set|update|configure).*(fee|tax)|(fee|tax).*(set|update)/i)) capabilities.push("fee");
+  if (has(/^(?:(?:set|update|configure).*(?:fee|tax)|(?:fee|tax).*(?:set|update))/i)) capabilities.push("fee");
   return capabilities;
 }
 async function fetchMarketDetail(market, force) {
