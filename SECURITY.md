@@ -52,3 +52,22 @@ Local hooks are a convenience, not an unbypassable security boundary. Git client
 must execute hooks, and another clone needs its own installation. Keep GitHub
 Security CI and CodeQL enabled; this gate cannot predict future advisories.
 See the [Git pre-push documentation](https://git-scm.com/docs/githooks#_pre_push).
+
+## Payment UI Hardening
+
+Payment status, invoice/escrow/subscription receipts, treasury/merchant histories,
+and CCTP receipts render dynamic values with text nodes and DOM elements, not HTML
+templates. Explorer links require valid address/transaction formats and fixed
+explorer origins. Wallet account/network checks and existing contract sources are
+preserved. No transaction or contract redeployment is required for these UI fixes.
+
+Usage billing accepts only validated contract addresses. Manually selected addresses
+apply to the current session; deployment receipts can retain their public contract
+address. This metadata is public, not a private key. Secrets must never be entered
+in contract fields or stored in browser storage.
+
+`npm run test-security-js` includes malicious error messages, stored markup,
+untrusted explorer links, row selection, and incremental CCTP receipt tests. These
+regressions exercise the production rendering functions without requesting wallet
+signatures or sending network transactions. A passing CI job is not proof that
+CodeQL has no findings; check open alerts separately after each analysis.

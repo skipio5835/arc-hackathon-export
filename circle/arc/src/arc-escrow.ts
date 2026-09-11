@@ -1,3 +1,4 @@
+import { arcScanLink, codeValue, receiptField, tableCell } from "./dom-safety.js";
 import {
   createPublicClient,
   createWalletClient,
@@ -372,32 +373,34 @@ function statusClass(status: EscrowStatus): string {
   return `status ${status}`;
 }
 
-function receiptField(label: string, value: string): string {
-  return `<div><dt>${escapeHtml(label)}</dt><dd>${value}</dd></div>`;
-}
 
 function renderRows(): void {
-  el.escrowRows.innerHTML = records
-    .map((record) => {
-      const selected = record.id === selectedId ? "true" : "false";
-      return `
-        <tr data-selected="${selected}">
-          <td>${escapeHtml(record.id)}</td>
-          <td>${escapeHtml(record.amount)} USDC</td>
-          <td><span class="${statusClass(record.status)}">${statusLabel(record.status)}</span></td>
-          <td>${escapeHtml(record.outcome)}</td>
-          <td><button class="select-row secondary" data-id="${escapeHtml(record.id)}" type="button">Select</button></td>
-        </tr>
-      `;
-    })
-    .join("");
-
-  document.querySelectorAll<HTMLButtonElement>(".select-row").forEach((button) => {
+  const fragment = document.createDocumentFragment();
+  for (const record of records) {
+    const row = document.createElement("tr");
+    const state = document.createElement("span");
+    const button = document.createElement("button");
+    row.dataset.selected = record.id === selectedId ? "true" : "false";
+    state.className = statusClass(record.status);
+    state.textContent = statusLabel(record.status);
+    button.className = "select-row secondary";
+    button.type = "button";
+    button.textContent = "Select";
+    button.dataset.id = record.id;
     button.addEventListener("click", () => {
       selectedId = button.dataset.id ?? "";
       render();
     });
-  });
+    row.append(
+      tableCell(record.id),
+      tableCell(`${record.amount} USDC`),
+      tableCell(state),
+      tableCell(record.outcome),
+      tableCell(button),
+    );
+    fragment.append(row);
+  }
+  el.escrowRows.replaceChildren(fragment);
 }
 
 function renderReceipt(): void {
@@ -405,48 +408,36 @@ function renderReceipt(): void {
   if (!record) {
     el.selectedStatus.className = "status draft";
     el.selectedStatus.textContent = "draft";
-    el.receipt.innerHTML = receiptField("Escrow", "-") + receiptField("Amount", "-");
+    el.receipt.replaceChildren(receiptField("Escrow", "-"), receiptField("Amount", "-"));
     return;
   }
 
   const contract = record.contractAddress ?? contractAddress;
-  const funding = record.fundingTxHash
-    ? `<a href="${txUrl(record.fundingTxHash)}" target="_blank" rel="noreferrer">${shortHash(record.fundingTxHash)}</a>`
-    : "-";
-  const settlement = record.settlementTxHash
-    ? `<a href="${txUrl(record.settlementTxHash)}" target="_blank" rel="noreferrer">${shortHash(record.settlementTxHash)}</a>`
-    : "-";
-  const dispute = record.disputeTxHash
-    ? `<a href="${txUrl(record.disputeTxHash)}" target="_blank" rel="noreferrer">${shortHash(record.disputeTxHash)}</a>`
-    : "-";
-  const evidence = record.evidenceTxHash
-    ? `<a href="${txUrl(record.evidenceTxHash)}" target="_blank" rel="noreferrer">${shortHash(record.evidenceTxHash)}</a>`
-    : "-";
-  const resolution = record.resolutionTxHash
-    ? `<a href="${txUrl(record.resolutionTxHash)}" target="_blank" rel="noreferrer">${shortHash(record.resolutionTxHash)}</a>`
-    : "-";
-  const contractLink = contract
-    ? `<a href="${addressUrl(contract)}" target="_blank" rel="noreferrer">${shortHash(contract)}</a>`
-    : "-";
+  const funding = record.fundingTxHash ? arcScanLink("tx", record.fundingTxHash, shortHash(record.fundingTxHash)) : "-";
+  const settlement = record.settlementTxHash ? arcScanLink("tx", record.settlementTxHash, shortHash(record.settlementTxHash)) : "-";
+  const dispute = record.disputeTxHash ? arcScanLink("tx", record.disputeTxHash, shortHash(record.disputeTxHash)) : "-";
+  const evidence = record.evidenceTxHash ? arcScanLink("tx", record.evidenceTxHash, shortHash(record.evidenceTxHash)) : "-";
+  const resolution = record.resolutionTxHash ? arcScanLink("tx", record.resolutionTxHash, shortHash(record.resolutionTxHash)) : "-";
+  const contractLink = contract ? arcScanLink("address", contract, shortHash(contract)) : "-";
 
   el.selectedStatus.className = statusClass(record.status);
   el.selectedStatus.textContent = statusLabel(record.status);
-  el.receipt.innerHTML = [
-    receiptField("Escrow ID", `<code>${record.escrowId}</code>`),
+  el.receipt.replaceChildren(
+    receiptField("Escrow ID", codeValue(record.escrowId)),
     receiptField("Contract", contractLink),
-    receiptField("Seller", `<code>${record.seller}</code>`),
-    receiptField("Amount", `${escapeHtml(record.amount)} USDC`),
-    receiptField("Outcome", escapeHtml(record.outcome)),
+    receiptField("Seller", codeValue(record.seller)),
+    receiptField("Amount", `${record.amount} USDC`),
+    receiptField("Outcome", record.outcome),
     receiptField("Fund tx", funding),
     receiptField("Dispute tx", dispute),
     receiptField("Evidence tx", evidence),
     receiptField("Resolve tx", resolution),
     receiptField("Settle tx", settlement),
-    receiptField("Dispute URI", escapeHtml(record.disputeURI ?? "-")),
-    receiptField("Evidence URI", escapeHtml(record.evidenceURI ?? "-")),
-    receiptField("Resolution URI", escapeHtml(record.resolutionURI ?? "-")),
-    receiptField("Metadata", escapeHtml(record.metadataURI)),
-  ].join("");
+    receiptField("Dispute URI", record.disputeURI ?? "-"),
+    receiptField("Evidence URI", record.evidenceURI ?? "-"),
+    receiptField("Resolution URI", record.resolutionURI ?? "-"),
+    receiptField("Metadata", record.metadataURI),
+  );
 }
 
 function updateActions(): void {

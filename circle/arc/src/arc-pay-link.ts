@@ -1,3 +1,4 @@
+import { renderStatus } from "./dom-safety.js";
 import {
   createPublicClient,
   createWalletClient,
@@ -65,9 +66,7 @@ el.expiry.value = localDateTimeValue(new Date(Date.now() + 24 * 60 * 60 * 1000))
 el.metadata.value = `local:arc-pay-link:${today}`;
 
 function setStatus(message: string, hash?: Hash): void {
-  el.status.innerHTML = hash
-    ? `${message} <a href="https://testnet.arcscan.app/tx/${hash}" target="_blank" rel="noreferrer">ArcScan</a>`
-    : message;
+  renderStatus(el.status, message, hash);
 }
 
 function requireContract(): Address {

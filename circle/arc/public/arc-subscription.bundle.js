@@ -11557,6 +11557,47 @@ var init_call = __esm({
 // circle/arc/src/arc-subscription.ts
 init_browser_buffer_global();
 
+// circle/arc/src/dom-safety.ts
+init_browser_buffer_global();
+var ARC_SCAN_ORIGIN = "https://testnet.arcscan.app";
+var ARC_ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
+var ARC_TRANSACTION_PATTERN = /^0x[a-fA-F0-9]{64}$/;
+function appendContent(parent, content) {
+  parent.append(typeof content === "string" ? document.createTextNode(content) : content);
+}
+function arcScanLink(path, value, label = value) {
+  const isValid = path === "address" ? ARC_ADDRESS_PATTERN.test(value) : ARC_TRANSACTION_PATTERN.test(value);
+  if (!isValid) {
+    return document.createTextNode(label);
+  }
+  const anchor = document.createElement("a");
+  const encodedValue = encodeURIComponent(value);
+  anchor.href = path === "address" ? `${ARC_SCAN_ORIGIN}/address/${encodedValue}` : `${ARC_SCAN_ORIGIN}/tx/${encodedValue}`;
+  anchor.target = "_blank";
+  anchor.rel = "noreferrer";
+  anchor.textContent = label;
+  return anchor;
+}
+function codeValue(value) {
+  const code = document.createElement("code");
+  code.textContent = value;
+  return code;
+}
+function receiptField(label, value) {
+  const row = document.createElement("div");
+  const term = document.createElement("dt");
+  const description = document.createElement("dd");
+  term.textContent = label;
+  appendContent(description, value);
+  row.append(term, description);
+  return row;
+}
+function tableCell(value) {
+  const cell = document.createElement("td");
+  appendContent(cell, value);
+  return cell;
+}
+
 // node_modules/viem/_esm/index.js
 init_browser_buffer_global();
 init_exports();
@@ -24074,27 +24115,9 @@ function saveRecords() {
 function selectedRecord() {
   return records.find((record) => record.id === selectedId);
 }
-function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (char) => {
-    const entities = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    };
-    return entities[char] ?? char;
-  });
-}
 function shortHash(value) {
   if (!value) return "-";
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
-}
-function txUrl(hash3) {
-  return `https://testnet.arcscan.app/tx/${hash3}`;
-}
-function addressUrl(address) {
-  return `https://testnet.arcscan.app/address/${address}`;
 }
 function setStatus(message) {
   el.statusLine.textContent = message;
@@ -24176,57 +24199,62 @@ function randomPlanId(reference) {
 function statusClass(status) {
   return `status ${status.replace("plan-created", "created")}`;
 }
-function receiptField(label, value) {
-  return `<div><dt>${escapeHtml(label)}</dt><dd>${value}</dd></div>`;
-}
 function renderRows() {
-  el.subscriptionRows.innerHTML = records.map((record) => {
-    const selected = record.id === selectedId ? "true" : "false";
-    return `
-        <tr data-selected="${selected}">
-          <td>${escapeHtml(record.id)}</td>
-          <td>${escapeHtml(record.price)} USDC</td>
-          <td>${record.periodDays}d</td>
-          <td><span class="${statusClass(record.status)}">${record.status}</span></td>
-          <td><button class="select-row secondary" data-id="${escapeHtml(record.id)}" type="button">Select</button></td>
-        </tr>
-      `;
-  }).join("");
-  document.querySelectorAll(".select-row").forEach((button) => {
+  const fragment = document.createDocumentFragment();
+  for (const record of records) {
+    const row = document.createElement("tr");
+    const state = document.createElement("span");
+    const button = document.createElement("button");
+    row.dataset.selected = record.id === selectedId ? "true" : "false";
+    state.className = statusClass(record.status);
+    state.textContent = record.status;
+    button.className = "select-row secondary";
+    button.type = "button";
+    button.textContent = "Select";
+    button.dataset.id = record.id;
     button.addEventListener("click", () => {
       selectedId = button.dataset.id ?? "";
       render();
     });
-  });
+    row.append(
+      tableCell(record.id),
+      tableCell(`${record.price} USDC`),
+      tableCell(`${record.periodDays}d`),
+      tableCell(state),
+      tableCell(button)
+    );
+    fragment.append(row);
+  }
+  el.subscriptionRows.replaceChildren(fragment);
 }
 function renderReceipt() {
   const record = selectedRecord();
   if (!record) {
     el.selectedStatus.className = "status draft";
     el.selectedStatus.textContent = "draft";
-    el.receipt.innerHTML = receiptField("Plan", "-") + receiptField("Price", "-");
+    el.receipt.replaceChildren(receiptField("Plan", "-"), receiptField("Price", "-"));
     return;
   }
   const contract = record.contractAddress ?? contractAddress;
-  const contractLink = contract ? `<a href="${addressUrl(contract)}" target="_blank" rel="noreferrer">${shortHash(contract)}</a>` : "-";
-  const planTx = record.planTxHash ? `<a href="${txUrl(record.planTxHash)}" target="_blank" rel="noreferrer">${shortHash(record.planTxHash)}</a>` : "-";
-  const subTx = record.subscribeTxHash ? `<a href="${txUrl(record.subscribeTxHash)}" target="_blank" rel="noreferrer">${shortHash(record.subscribeTxHash)}</a>` : "-";
-  const cancelTx = record.cancelTxHash ? `<a href="${txUrl(record.cancelTxHash)}" target="_blank" rel="noreferrer">${shortHash(record.cancelTxHash)}</a>` : "-";
+  const contractLink = contract ? arcScanLink("address", contract, shortHash(contract)) : "-";
+  const planTx = record.planTxHash ? arcScanLink("tx", record.planTxHash, shortHash(record.planTxHash)) : "-";
+  const subTx = record.subscribeTxHash ? arcScanLink("tx", record.subscribeTxHash, shortHash(record.subscribeTxHash)) : "-";
+  const cancelTx = record.cancelTxHash ? arcScanLink("tx", record.cancelTxHash, shortHash(record.cancelTxHash)) : "-";
   el.selectedStatus.className = statusClass(record.status);
   el.selectedStatus.textContent = record.status;
-  el.receipt.innerHTML = [
-    receiptField("Plan ID", `<code>${record.planId}</code>`),
+  el.receipt.replaceChildren(
+    receiptField("Plan ID", codeValue(record.planId)),
     receiptField("Contract", contractLink),
-    receiptField("Merchant", `<code>${record.merchant}</code>`),
-    receiptField("Price", `${escapeHtml(record.price)} USDC`),
+    receiptField("Merchant", codeValue(record.merchant)),
+    receiptField("Price", `${record.price} USDC`),
     receiptField("Period", `${record.periodDays} days`),
     receiptField("Cycles", String(record.cycles)),
     receiptField("Paid through", record.paidThrough ?? "-"),
     receiptField("Plan tx", planTx),
     receiptField("Subscribe tx", subTx),
     receiptField("Cancel tx", cancelTx),
-    receiptField("Metadata", escapeHtml(record.metadataURI))
-  ].join("");
+    receiptField("Metadata", record.metadataURI)
+  );
 }
 function updateActions() {
   const record = selectedRecord();

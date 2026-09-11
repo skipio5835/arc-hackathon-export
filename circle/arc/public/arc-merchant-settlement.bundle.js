@@ -11557,6 +11557,30 @@ var init_call = __esm({
 // circle/arc/src/arc-merchant-settlement.ts
 init_browser_buffer_global();
 
+// circle/arc/src/dom-safety.ts
+init_browser_buffer_global();
+var ARC_SCAN_ORIGIN = "https://testnet.arcscan.app";
+var ARC_ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
+var ARC_TRANSACTION_PATTERN = /^0x[a-fA-F0-9]{64}$/;
+function arcScanLink(path, value, label = value) {
+  const isValid = path === "address" ? ARC_ADDRESS_PATTERN.test(value) : ARC_TRANSACTION_PATTERN.test(value);
+  if (!isValid) {
+    return document.createTextNode(label);
+  }
+  const anchor = document.createElement("a");
+  const encodedValue = encodeURIComponent(value);
+  anchor.href = path === "address" ? `${ARC_SCAN_ORIGIN}/address/${encodedValue}` : `${ARC_SCAN_ORIGIN}/tx/${encodedValue}`;
+  anchor.target = "_blank";
+  anchor.rel = "noreferrer";
+  anchor.textContent = label;
+  return anchor;
+}
+function renderStatus(container, message, hash3, linkLabel = "ArcScan") {
+  container.replaceChildren(document.createTextNode(message));
+  if (!hash3) return;
+  container.append(document.createTextNode(" "), arcScanLink("tx", hash3, linkLabel));
+}
+
 // node_modules/viem/_esm/index.js
 init_browser_buffer_global();
 init_exports();
@@ -23968,14 +23992,6 @@ var ARC_TESTNET_CHAIN = {
 
 // circle/arc/src/browser-security.ts
 init_browser_buffer_global();
-function escapeHtml(value) {
-  return value.replace(/[&<>"]/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;"
-  })[character] ?? character);
-}
 function readStoredArray(key) {
   try {
     const value = JSON.parse(localStorage.getItem(key) ?? "[]");
@@ -24024,14 +24040,33 @@ var el = {
   ledger: document.querySelector("#ledger")
 };
 function setStatus(message, hash3) {
-  el.status.innerHTML = hash3 ? `${message} <a href="${ARC_TESTNET.explorerUrl}/tx/${hash3}" target="_blank" rel="noreferrer">ArcScan receipt</a>` : message;
+  renderStatus(el.status, message, hash3, "ArcScan receipt");
 }
 function ledger() {
   return readStoredArray(activityKey);
 }
 function renderLedger() {
   const rows = ledger();
-  el.ledger.innerHTML = rows.length ? rows.map((row) => `<li><strong>${escapeHtml(row.kind)} \xB7 ${escapeHtml(row.token)} ${escapeHtml(row.amount)}</strong><span>${escapeHtml(row.reference)} \xB7 ${escapeHtml(row.counterparty)}</span><a href="${ARC_TESTNET.explorerUrl}/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><small>${new Date(row.at).toLocaleString()}</small></li>`).join("") : '<li class="empty">No settlement receipts recorded.</li>';
+  if (rows.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "empty";
+    empty.textContent = "No settlement receipts recorded.";
+    el.ledger.replaceChildren(empty);
+    return;
+  }
+  const fragment = document.createDocumentFragment();
+  for (const row of rows) {
+    const item = document.createElement("li");
+    const heading = document.createElement("strong");
+    const detail = document.createElement("span");
+    const timestamp = document.createElement("small");
+    heading.textContent = `${row.kind} \xB7 ${row.token} ${row.amount}`;
+    detail.textContent = `${row.reference} \xB7 ${row.counterparty}`;
+    timestamp.textContent = new Date(row.at).toLocaleString();
+    item.append(heading, detail, arcScanLink("tx", row.hash), timestamp);
+    fragment.append(item);
+  }
+  el.ledger.replaceChildren(fragment);
 }
 async function connect() {
   provider = window.ethereum ?? null;

@@ -11557,6 +11557,42 @@ var init_call = __esm({
 // circle/arc/src/arc-invoice.ts
 init_browser_buffer_global();
 
+// circle/arc/src/dom-safety.ts
+init_browser_buffer_global();
+var ARC_SCAN_ORIGIN = "https://testnet.arcscan.app";
+var ARC_ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
+var ARC_TRANSACTION_PATTERN = /^0x[a-fA-F0-9]{64}$/;
+function appendContent(parent, content) {
+  parent.append(typeof content === "string" ? document.createTextNode(content) : content);
+}
+function arcScanLink(path, value, label = value) {
+  const isValid = path === "address" ? ARC_ADDRESS_PATTERN.test(value) : ARC_TRANSACTION_PATTERN.test(value);
+  if (!isValid) {
+    return document.createTextNode(label);
+  }
+  const anchor = document.createElement("a");
+  const encodedValue = encodeURIComponent(value);
+  anchor.href = path === "address" ? `${ARC_SCAN_ORIGIN}/address/${encodedValue}` : `${ARC_SCAN_ORIGIN}/tx/${encodedValue}`;
+  anchor.target = "_blank";
+  anchor.rel = "noreferrer";
+  anchor.textContent = label;
+  return anchor;
+}
+function receiptField(label, value) {
+  const row = document.createElement("div");
+  const term = document.createElement("dt");
+  const description = document.createElement("dd");
+  term.textContent = label;
+  appendContent(description, value);
+  row.append(term, description);
+  return row;
+}
+function tableCell(value) {
+  const cell = document.createElement("td");
+  appendContent(cell, value);
+  return cell;
+}
+
 // node_modules/viem/_esm/index.js
 init_browser_buffer_global();
 init_exports();
@@ -24119,27 +24155,9 @@ el.quoteAmount.value = "0.003";
 el.quoteMetadataURI.value = `local:arc-quote-${today}:metadata`;
 el.quoteAcceptanceURI.value = `local:arc-quote-${today}:accepted`;
 el.quoteSettlementTo.value = ZERO_ADDRESS;
-function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (char) => {
-    const entities = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    };
-    return entities[char] ?? char;
-  });
-}
 function shortHash(value) {
   if (!value) return "-";
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
-}
-function txUrl(hash3) {
-  return `https://testnet.arcscan.app/tx/${hash3}`;
-}
-function addressUrl(address) {
-  return `https://testnet.arcscan.app/address/${address}`;
 }
 function setStatus(message) {
   el.statusLine.textContent = message;
@@ -24296,55 +24314,60 @@ function statusLabel(status) {
   return status;
 }
 function renderRows() {
-  el.invoiceRows.innerHTML = invoices.map((invoice) => {
-    const selected = invoice.id === selectedId ? "true" : "false";
-    return `
-        <tr data-selected="${selected}">
-          <td>${escapeHtml(invoice.id)}</td>
-          <td>${escapeHtml(invoice.customerName)}</td>
-          <td>${escapeHtml(invoice.totalDue)} USDC</td>
-          <td><span class="${statusClass(invoice.status)}">${statusLabel(invoice.status)}</span></td>
-          <td><button class="select-row secondary" data-id="${escapeHtml(invoice.id)}" type="button">Select</button></td>
-        </tr>
-      `;
-  }).join("");
-  document.querySelectorAll(".select-row").forEach((button) => {
+  const fragment = document.createDocumentFragment();
+  for (const invoice of invoices) {
+    const row = document.createElement("tr");
+    const state = document.createElement("span");
+    const button = document.createElement("button");
+    row.dataset.selected = invoice.id === selectedId ? "true" : "false";
+    state.className = statusClass(invoice.status);
+    state.textContent = statusLabel(invoice.status);
+    button.className = "select-row secondary";
+    button.type = "button";
+    button.textContent = "Select";
+    button.dataset.id = invoice.id;
     button.addEventListener("click", () => selectInvoice(button.dataset.id ?? ""));
-  });
+    row.append(
+      tableCell(invoice.id),
+      tableCell(invoice.customerName),
+      tableCell(`${invoice.totalDue} USDC`),
+      tableCell(state),
+      tableCell(button)
+    );
+    fragment.append(row);
+  }
+  el.invoiceRows.replaceChildren(fragment);
   const open = invoices.filter((invoice) => invoice.status !== "paid" && invoice.status !== "cancelled").length;
   el.invoiceCount.textContent = `${open} open`;
   const volume = invoices.filter((invoice) => invoice.status === "paid").reduce((sum, invoice) => sum + Number(invoice.totalDue), 0);
   el.paidVolume.textContent = `${volume.toFixed(2)} USDC`;
-}
-function receiptField(label, value) {
-  return `<div><dt>${escapeHtml(label)}</dt><dd>${value}</dd></div>`;
 }
 function renderReceipt() {
   const invoice = selectedInvoice();
   if (!invoice) {
     el.selectedStatus.className = "status draft";
     el.selectedStatus.textContent = "draft";
-    el.receipt.innerHTML = receiptField("Invoice", "-") + receiptField("Amount", "-");
+    el.receipt.replaceChildren(receiptField("Invoice", "-"), receiptField("Amount", "-"));
     return;
   }
   el.selectedStatus.className = statusClass(invoice.status);
   el.selectedStatus.textContent = statusLabel(invoice.status);
   const contract = invoice.contractAddress ?? contractAddress;
-  const registration = invoice.registrationTxHash ? `<a href="${txUrl(invoice.registrationTxHash)}" target="_blank" rel="noreferrer">${shortHash(invoice.registrationTxHash)}</a>` : "-";
-  const payment = invoice.paymentTxHash ? `<a href="${txUrl(invoice.paymentTxHash)}" target="_blank" rel="noreferrer">${shortHash(invoice.paymentTxHash)}</a>` : "-";
-  const cancellation = invoice.cancellationTxHash ? `<a href="${txUrl(invoice.cancellationTxHash)}" target="_blank" rel="noreferrer">${shortHash(invoice.cancellationTxHash)}</a>` : "-";
-  const contractLink = contract ? `<a href="${addressUrl(contract)}" target="_blank" rel="noreferrer">${shortHash(contract)}</a>` : "-";
-  el.receipt.innerHTML = [
-    receiptField("Invoice", escapeHtml(invoice.id)),
-    receiptField("Total due", `${escapeHtml(invoice.totalDue)} USDC`),
-    receiptField("Merchant", escapeHtml(invoice.merchantName)),
-    receiptField("Customer", escapeHtml(invoice.customerName)),
-    receiptField("Chain invoice id", escapeHtml(shortHash(invoice.chainInvoiceId))),
+  const registration = invoice.registrationTxHash ? arcScanLink("tx", invoice.registrationTxHash, shortHash(invoice.registrationTxHash)) : "-";
+  const payment = invoice.paymentTxHash ? arcScanLink("tx", invoice.paymentTxHash, shortHash(invoice.paymentTxHash)) : "-";
+  const cancellation = invoice.cancellationTxHash ? arcScanLink("tx", invoice.cancellationTxHash, shortHash(invoice.cancellationTxHash)) : "-";
+  const contractLink = contract ? arcScanLink("address", contract, shortHash(contract)) : "-";
+  el.receipt.replaceChildren(
+    receiptField("Invoice", invoice.id),
+    receiptField("Total due", `${invoice.totalDue} USDC`),
+    receiptField("Merchant", invoice.merchantName),
+    receiptField("Customer", invoice.customerName),
+    receiptField("Chain invoice id", shortHash(invoice.chainInvoiceId)),
     receiptField("Contract", contractLink),
     receiptField("Register tx", registration),
     receiptField("Payment tx", payment),
     receiptField("Cancel tx", cancellation)
-  ].join("");
+  );
   el.stepDraft.classList.add("done");
   el.stepRegistered.classList.toggle(
     "done",
@@ -24369,7 +24392,9 @@ function renderQuote() {
 function updateContractSummary() {
   const saved = el.contractAddress.value.trim();
   contractAddress = isAddress(saved) ? saved : "";
-  el.contractSummary.innerHTML = contractAddress ? `<a href="${addressUrl(contractAddress)}" target="_blank" rel="noreferrer">${shortHash(contractAddress)}</a>` : "Not loaded";
+  el.contractSummary.replaceChildren(
+    contractAddress ? arcScanLink("address", contractAddress, shortHash(contractAddress)) : document.createTextNode("Not loaded")
+  );
 }
 function updateActions() {
   updateContractSummary();

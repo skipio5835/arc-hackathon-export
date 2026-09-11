@@ -1,3 +1,4 @@
+import { renderStatus } from "./dom-safety.js";
 import { createPublicClient, createWalletClient, custom, formatEther, http, isAddress, parseEther } from "viem";
 import type { Address, EIP1193Provider, Hash } from "viem";
 
@@ -33,7 +34,7 @@ el.amountB.value = "0.004";
 el.metadata.value = `local:arc-revenue-split:${new Date().toISOString().slice(0, 10)}`;
 
 function setStatus(message: string, hash?: Hash): void {
-  el.status.innerHTML = hash ? `${message} <a href="https://testnet.arcscan.app/tx/${hash}" target="_blank" rel="noreferrer">ArcScan</a>` : message;
+  renderStatus(el.status, message, hash);
 }
 function requireContract(): Address {
   if (!isAddress(contract)) throw new Error("Set a valid ArcRevenueSplitter contract address first.");

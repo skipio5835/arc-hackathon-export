@@ -11557,6 +11557,14 @@ var init_call = __esm({
 // circle/arc/src/raw-cctp.ts
 init_browser_buffer_global();
 
+// circle/arc/src/dom-safety.ts
+init_browser_buffer_global();
+function codeValue(value) {
+  const code = document.createElement("code");
+  code.textContent = value;
+  return code;
+}
+
 // node_modules/viem/_esm/index.js
 init_browser_buffer_global();
 init_exports();
@@ -23398,24 +23406,17 @@ function errorMessage(error) {
   console.error(error);
   return error instanceof Error ? error.message : "Unknown error.";
 }
-function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (char) => {
-    const replacements = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    };
-    return replacements[char] ?? char;
-  });
-}
 function chainExplorerTx(chain, hash3) {
   return `${chains[chain].explorerUrl}/tx/${hash3}`;
 }
 function txLink(chain, hash3) {
-  const url = chainExplorerTx(chain, hash3);
-  return `<a href="${url}" target="_blank" rel="noreferrer">${escapeHtml(hash3)}</a>`;
+  if (!/^0x[a-fA-F0-9]{64}$/.test(hash3)) return document.createTextNode(hash3);
+  const anchor = document.createElement("a");
+  anchor.href = chainExplorerTx(chain, hash3);
+  anchor.target = "_blank";
+  anchor.rel = "noreferrer";
+  anchor.textContent = hash3;
+  return anchor;
 }
 function selectedDestination() {
   return el.destination.value;
@@ -23543,15 +23544,22 @@ async function refreshBalances() {
   el.allowance.textContent = `${formatUnits(allowance, USDC_DECIMALS)} USDC`;
 }
 function renderFees(quotes, selected, feeUnits) {
-  const rows = quotes.map((quote) => {
-    const label = quote.finalityThreshold === 1e3 ? "FAST" : "STANDARD";
-    return `<div><strong>${label}</strong><span>${quote.minimumFee} bps</span></div>`;
-  }).join("");
-  el.feesBox.innerHTML = `
-    ${rows}
-    <div><strong>selected</strong><span>${selected.finalityThreshold}</span></div>
-    <div><strong>maxFee</strong><span>${formatUnits(feeUnits, USDC_DECIMALS)} USDC</span></div>
-  `;
+  const rows = quotes.map((quote) => [
+    quote.finalityThreshold === 1e3 ? "FAST" : "STANDARD",
+    `${quote.minimumFee} bps`
+  ]);
+  rows.push(["selected", String(selected.finalityThreshold)], ["maxFee", `${formatUnits(feeUnits, USDC_DECIMALS)} USDC`]);
+  const fragment = document.createDocumentFragment();
+  for (const [label, value] of rows) {
+    const row = document.createElement("div");
+    const heading = document.createElement("strong");
+    const detail = document.createElement("span");
+    heading.textContent = label;
+    detail.textContent = value;
+    row.append(heading, detail);
+    fragment.append(row);
+  }
+  el.feesBox.replaceChildren(fragment);
 }
 async function fetchFees() {
   try {
@@ -23744,20 +23752,24 @@ function renderReceipt(next) {
     ["burnTx", merged.burnTx ? txLink("Arc_Testnet", merged.burnTx) : "-"],
     ["eventNonce", merged.eventNonce || "-"],
     ["attestationStatus", merged.attestationStatus || "-"],
-    ["message", merged.message ? `<code>${escapeHtml(merged.message)}</code>` : "-"],
+    ["message", merged.message ? codeValue(merged.message) : "-"],
     ["decodedAmount", merged.decodedAmount ? `${formatUnits(BigInt(merged.decodedAmount), USDC_DECIMALS)} USDC` : "-"],
     ["feeExecuted", merged.feeExecuted ? `${formatUnits(BigInt(merged.feeExecuted), USDC_DECIMALS)} USDC` : "-"],
     ["mintTx", merged.mintTx ? txLink(destination, merged.mintTx) : "-"]
   ];
-  el.receipt.innerHTML = rows.map(([key, value]) => {
-    const rawValue = merged[key] ?? "";
-    return `
-        <div data-key="${escapeHtml(key)}" data-value="${escapeHtml(rawValue)}">
-          <strong>${escapeHtml(key)}</strong>
-          <span>${value}</span>
-        </div>
-      `;
-  }).join("");
+  const fragment = document.createDocumentFragment();
+  for (const [key, value] of rows) {
+    const row = document.createElement("div");
+    const heading = document.createElement("strong");
+    const detail = document.createElement("span");
+    row.dataset.key = key;
+    row.dataset.value = merged[key] ?? "";
+    heading.textContent = key;
+    detail.append(typeof value === "string" ? document.createTextNode(value) : value);
+    row.append(heading, detail);
+    fragment.append(row);
+  }
+  el.receipt.replaceChildren(fragment);
 }
 el.connect.addEventListener("click", () => void connect());
 el.refresh.addEventListener("click", () => void refreshBalances());
@@ -23772,7 +23784,13 @@ el.speed.addEventListener("change", () => {
   message = null;
   attestation = null;
   setButtons(Boolean(account));
-  el.feesBox.innerHTML = `<div><strong>fees</strong><span>-</span></div>`;
+  const row = document.createElement("div");
+  const heading = document.createElement("strong");
+  const detail = document.createElement("span");
+  heading.textContent = "fees";
+  detail.textContent = "-";
+  row.append(heading, detail);
+  el.feesBox.replaceChildren(row);
 });
 /*! Bundled license information:
 

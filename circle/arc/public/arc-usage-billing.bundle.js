@@ -23948,6 +23948,30 @@ init_formatEther();
 init_formatGwei();
 init_formatUnits();
 
+// circle/arc/src/dom-safety.ts
+init_browser_buffer_global();
+var ARC_SCAN_ORIGIN = "https://testnet.arcscan.app";
+var ARC_ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
+var ARC_TRANSACTION_PATTERN = /^0x[a-fA-F0-9]{64}$/;
+function arcScanLink(path, value, label = value) {
+  const isValid = path === "address" ? ARC_ADDRESS_PATTERN.test(value) : ARC_TRANSACTION_PATTERN.test(value);
+  if (!isValid) {
+    return document.createTextNode(label);
+  }
+  const anchor = document.createElement("a");
+  const encodedValue = encodeURIComponent(value);
+  anchor.href = path === "address" ? `${ARC_SCAN_ORIGIN}/address/${encodedValue}` : `${ARC_SCAN_ORIGIN}/tx/${encodedValue}`;
+  anchor.target = "_blank";
+  anchor.rel = "noreferrer";
+  anchor.textContent = label;
+  return anchor;
+}
+function renderStatus(container, message, hash3, linkLabel = "ArcScan") {
+  container.replaceChildren(document.createTextNode(message));
+  if (!hash3) return;
+  container.append(document.createTextNode(" "), arcScanLink("tx", hash3, linkLabel));
+}
+
 // circle/arc/src/arc-usage-billing.ts
 var arc = { id: 5042002, name: "Arc Testnet", nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } }, blockExplorers: { default: { name: "ArcScan", url: "https://testnet.arcscan.app" } } };
 var publicClient = createPublicClient({ chain: arc, transport: http() });
@@ -23957,7 +23981,8 @@ var provider = null;
 var wallet = null;
 var account = null;
 var artifact = null;
-var contract = localStorage.getItem(storageKey) ?? "";
+var savedContract = localStorage.getItem(storageKey);
+var contract = savedContract && isAddress(savedContract) ? savedContract : "";
 var el = {
   connect: document.querySelector("#connect"),
   wallet: document.querySelector("#wallet"),
@@ -23986,7 +24011,7 @@ el.unitPrice.value = "0.001";
 el.expiry.value = new Date(Date.now() + 24 * 60 * 60 * 1e3).toISOString().slice(0, 16);
 el.metadata.value = `local:arc-usage:${date}`;
 function setStatus(message, hash3) {
-  el.status.innerHTML = hash3 ? `${message} <a href="https://testnet.arcscan.app/tx/${hash3}" target="_blank" rel="noreferrer">ArcScan</a>` : message;
+  renderStatus(el.status, message, hash3);
 }
 function requireContract() {
   if (!isAddress(contract)) throw new Error("Set a valid ArcUsageBilling contract address first.");
@@ -24029,9 +24054,10 @@ async function deploy() {
   const hash3 = await wallet.deployContract({ abi: compiled.abi, bytecode: compiled.bytecode });
   const receipt = await publicClient.waitForTransactionReceipt({ hash: hash3 });
   if (!receipt.contractAddress) throw new Error("Deployment receipt did not include a contract address.");
-  contract = receipt.contractAddress;
-  el.contract.value = contract;
-  localStorage.setItem(storageKey, contract);
+  const deployedContract = receipt.contractAddress;
+  contract = deployedContract;
+  el.contract.value = deployedContract;
+  localStorage.setItem(storageKey, deployedContract);
   setStatus("ArcUsageBilling deployed.", hash3);
 }
 async function createCharge() {
@@ -24075,11 +24101,19 @@ async function cancelCharge() {
   setStatus("Usage charge cancelled.", hash3);
   await loadCharge();
 }
+function useContract() {
+  const nextContract = el.contract.value.trim();
+  if (!isAddress(nextContract)) throw new Error("Enter a valid contract address.");
+  contract = nextContract;
+  setStatus("Contract address selected for this session.");
+}
 el.connect.addEventListener("click", () => void connect().catch((error) => setStatus(error instanceof Error ? error.message : "Connection failed.")));
 el.save.addEventListener("click", () => {
-  contract = el.contract.value.trim();
-  localStorage.setItem(storageKey, contract);
-  setStatus("Contract address saved.");
+  try {
+    useContract();
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : "Selection failed.");
+  }
 });
 el.deploy.addEventListener("click", () => void deploy().catch((error) => setStatus(error instanceof Error ? error.message : "Deployment failed.")));
 el.create.addEventListener("click", () => void createCharge().catch((error) => setStatus(error instanceof Error ? error.message : "Create failed.")));

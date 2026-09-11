@@ -1,3 +1,4 @@
+import { arcScanLink, codeValue, renderStatus } from "./dom-safety.js";
 import {
   createPublicClient,
   createWalletClient,
@@ -10,7 +11,7 @@ import {
 } from "viem";
 import type { Address, EIP1193Provider, Hash } from "viem";
 import { ARC_TESTNET, ARC_TESTNET_CHAIN } from "./arc-network";
-import { assertWalletContext, escapeHtml, readStoredArray, validTokenAmount } from "./browser-security";
+import { assertWalletContext, readStoredArray, validTokenAmount } from "./browser-security";
 
 declare global {
   interface Window {
@@ -49,16 +50,31 @@ type Activity = { token: string; amount: string; recipient: string; hash: Hash; 
 const activityKey = "ArcTreasuryConsole.activity.v1";
 
 function setStatus(message: string, hash?: Hash): void {
-  el.status.innerHTML = hash
-    ? `${message} <a href="${ARC_TESTNET.explorerUrl}/tx/${hash}" target="_blank" rel="noreferrer">View on ArcScan</a>`
-    : message;
+  renderStatus(el.status, message, hash, "View on ArcScan");
 }
 
 function renderActivity(): void {
   const rows = readStoredArray<Activity>(activityKey);
-  el.activity.innerHTML = rows.length
-    ? rows.map((row) => `<li><strong>${escapeHtml(row.token)} ${escapeHtml(row.amount)}</strong> to <code>${escapeHtml(row.recipient)}</code><br><a href="${ARC_TESTNET.explorerUrl}/tx/${row.hash}" target="_blank" rel="noreferrer">${row.hash}</a><span>${new Date(row.createdAt).toLocaleString()}</span></li>`).join("")
-    : "<li class=\"empty\">No local transfers recorded yet.</li>";
+  if (rows.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "empty";
+    empty.textContent = "No local transfers recorded yet.";
+    el.activity.replaceChildren(empty);
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  for (const row of rows) {
+    const item = document.createElement("li");
+    const heading = document.createElement("strong");
+    const timestamp = document.createElement("span");
+    heading.textContent = `${row.token} ${row.amount}`;
+    timestamp.textContent = new Date(row.createdAt).toLocaleString();
+    item.append(heading, document.createTextNode(" to "), codeValue(row.recipient), document.createElement("br"));
+    item.append(arcScanLink("tx", row.hash), timestamp);
+    fragment.append(item);
+  }
+  el.activity.replaceChildren(fragment);
 }
 
 async function connect(): Promise<void> {

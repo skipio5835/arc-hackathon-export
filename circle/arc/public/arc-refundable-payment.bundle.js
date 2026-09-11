@@ -11557,6 +11557,30 @@ var init_call = __esm({
 // circle/arc/src/arc-refundable-payment.ts
 init_browser_buffer_global();
 
+// circle/arc/src/dom-safety.ts
+init_browser_buffer_global();
+var ARC_SCAN_ORIGIN = "https://testnet.arcscan.app";
+var ARC_ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
+var ARC_TRANSACTION_PATTERN = /^0x[a-fA-F0-9]{64}$/;
+function arcScanLink(path, value, label = value) {
+  const isValid = path === "address" ? ARC_ADDRESS_PATTERN.test(value) : ARC_TRANSACTION_PATTERN.test(value);
+  if (!isValid) {
+    return document.createTextNode(label);
+  }
+  const anchor = document.createElement("a");
+  const encodedValue = encodeURIComponent(value);
+  anchor.href = path === "address" ? `${ARC_SCAN_ORIGIN}/address/${encodedValue}` : `${ARC_SCAN_ORIGIN}/tx/${encodedValue}`;
+  anchor.target = "_blank";
+  anchor.rel = "noreferrer";
+  anchor.textContent = label;
+  return anchor;
+}
+function renderStatus(container, message, hash3, linkLabel = "ArcScan") {
+  container.replaceChildren(document.createTextNode(message));
+  if (!hash3) return;
+  container.append(document.createTextNode(" "), arcScanLink("tx", hash3, linkLabel));
+}
+
 // node_modules/viem/_esm/index.js
 init_browser_buffer_global();
 init_exports();
@@ -23973,7 +23997,7 @@ el.expiry.value = localDateTimeValue(new Date(roundedNow + 10 * 6e4));
 el.metadata.value = `local:arc-refundable-payment:${today}`;
 el.reason.value = `local:arc-refund:${today}:reason`;
 function setStatus(message, hash3) {
-  el.status.innerHTML = hash3 ? `${message} <a href="https://testnet.arcscan.app/tx/${hash3}" target="_blank" rel="noreferrer">ArcScan</a>` : message;
+  renderStatus(el.status, message, hash3);
 }
 function requireContract() {
   if (!isAddress(contract)) throw new Error("Set a valid ArcRefundablePayment contract address first.");

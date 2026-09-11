@@ -337,9 +337,21 @@
       el.spender.value = CIRCLE_WALLET;
 
       function setStatus(message, link) {
-        el.status.innerHTML = link
-          ? `${message} <a href="${link}" target="_blank" rel="noreferrer">${link}</a>`
-          : message;
+        el.status.replaceChildren(document.createTextNode(message));
+        if (!link) return;
+        try {
+          const url = new URL(link);
+          if (url.origin !== "https://testnet.arcscan.app" || url.username || url.password ||
+              url.search || url.hash || !/^\/tx\/0x[a-fA-F0-9]{64}$/.test(url.pathname)) return;
+          const anchor = document.createElement("a");
+          anchor.href = `https://testnet.arcscan.app${url.pathname}`;
+          anchor.target = "_blank";
+          anchor.rel = "noreferrer";
+          anchor.textContent = link;
+          el.status.append(document.createTextNode(" "), anchor);
+        } catch {
+          // A malformed explorer link must not turn an error into HTML or navigation.
+        }
       }
 
       function tokenContract(runner) {

@@ -1,3 +1,4 @@
+import { renderStatus } from "./dom-safety.js";
 import { createPublicClient, createWalletClient, custom, formatEther, http, isAddress, keccak256, parseEther, toBytes } from "viem";
 import type { Address, EIP1193Provider, Hash } from "viem";
 declare global { interface Window { ethereum?: EIP1193Provider; } }
@@ -11,7 +12,7 @@ const el = {
 };
 function localDateTimeValue(date: Date): string { const pad = (value: number) => String(value).padStart(2, "0"); return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`; }
 el.contract.value = contract; const now = Date.now(); const minute = 60_000; const roundedNow = Math.ceil(now / minute) * minute; const today = new Date(now).toISOString().slice(0, 10); el.streamId.value = `arc-stream-${today}`; el.amount.value = "0.02"; el.start.value = localDateTimeValue(new Date(roundedNow + 2 * minute)); el.end.value = localDateTimeValue(new Date(roundedNow + 10 * minute)); el.metadata.value = `local:arc-stream:${today}`;
-function setStatus(message: string, hash?: Hash): void { el.status.innerHTML = hash ? `${message} <a href="https://testnet.arcscan.app/tx/${hash}" target="_blank" rel="noreferrer">ArcScan</a>` : message; }
+function setStatus(message: string, hash?: Hash): void { renderStatus(el.status, message, hash); }
 function requireContract(): Address { if (!isAddress(contract)) throw new Error("Set a valid ArcStreamingPayroll contract address first."); return contract; }
 async function getArtifact(): Promise<Artifact> { artifact ??= await fetch("./artifacts/ArcStreamingPayroll.json").then((response) => response.json()) as Artifact; return artifact; }
 async function connect(): Promise<void> { provider = window.ethereum ?? null; if (!provider) throw new Error("MetaMask was not found."); await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId }] }); const accounts = await provider.request({ method: "eth_requestAccounts" }) as string[]; account = accounts[0] as Address; wallet = createWalletClient({ account, chain: arc, transport: custom(provider) }); el.wallet.textContent = account; el.recipient.value = account; el.balance.textContent = `${formatEther(await publicClient.getBalance({ address: account }))} USDC`; setStatus("Wallet connected. Self-stream is enabled for testing."); }
