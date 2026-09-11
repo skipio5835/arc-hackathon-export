@@ -71,3 +71,25 @@ untrusted explorer links, row selection, and incremental CCTP receipt tests. The
 regressions exercise the production rendering functions without requesting wallet
 signatures or sending network transactions. A passing CI job is not proof that
 CodeQL has no findings; check open alerts separately after each analysis.
+
+## Public Invoice Demo
+
+The static ArcInvoice page does not call the local `/api/arcinvoice` file server.
+Drafts and customer details use validated, bounded browser storage (100 records).
+There is no shared customer database, account isolation within a shared browser,
+or durable backup. Use fictional customer details. Clearing site data removes
+drafts and local transaction links; older local-server records are not migrated.
+
+Sharing is enabled only after an on-chain read, and only for the public demo
+contract. Links contain the contract and bytes32 invoice ID, not customer details.
+A fresh browser recovers the merchant, amount and current status from Arc Testnet.
+No remote metadata URI is fetched. New registrations record an opaque URN rather
+than a nonexistent public API URL. Invoice due dates are informational, not a
+contract-enforced expiry. Cached history and transaction links are not proof of
+payment; selected invoice state is re-read, and again checked before a payment.
+
+Payment/cancellation target the invoice's recorded contract, not the editable
+deployment field. Receipt status must be successful before reporting confirmation.
+RPC/storage failures remain visible and do not fabricate a paid state. Deployment
+is local-only because compiled artifacts are not published by this static export.
+Existing contracts, the local API, and the private development repo are unchanged.

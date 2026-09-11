@@ -4053,13 +4053,13 @@ function checksumAddress(address_, chainId) {
   if (checksumAddressCache.has(`${address_}.${chainId}`))
     return checksumAddressCache.get(`${address_}.${chainId}`);
   const hexAddress = chainId ? `${chainId}${address_.toLowerCase()}` : address_.substring(2).toLowerCase();
-  const hash3 = keccak256(stringToBytes(hexAddress), "bytes");
+  const hash4 = keccak256(stringToBytes(hexAddress), "bytes");
   const address = (chainId ? hexAddress.substring(`${chainId}0x`.length) : hexAddress).split("");
   for (let i = 0; i < 40; i += 2) {
-    if (hash3[i >> 1] >> 4 >= 8 && address[i]) {
+    if (hash4[i >> 1] >> 4 >= 8 && address[i]) {
       address[i] = address[i].toUpperCase();
     }
-    if ((hash3[i >> 1] & 15) >= 8 && address[i + 1]) {
+    if ((hash4[i >> 1] & 15) >= 8 && address[i + 1]) {
       address[i + 1] = address[i + 1].toUpperCase();
     }
   }
@@ -5362,7 +5362,7 @@ var init_transaction = __esm({
       }
     };
     TransactionNotFoundError = class extends BaseError2 {
-      constructor({ blockHash, blockNumber, blockTag, hash: hash3, index: index2 }) {
+      constructor({ blockHash, blockNumber, blockTag, hash: hash4, index: index2 }) {
         let identifier = "Transaction";
         if (blockTag && index2 !== void 0)
           identifier = `Transaction at block time "${blockTag}" at index "${index2}"`;
@@ -5370,16 +5370,16 @@ var init_transaction = __esm({
           identifier = `Transaction at block hash "${blockHash}" at index "${index2}"`;
         if (blockNumber && index2 !== void 0)
           identifier = `Transaction at block number "${blockNumber}" at index "${index2}"`;
-        if (hash3)
-          identifier = `Transaction with hash "${hash3}"`;
+        if (hash4)
+          identifier = `Transaction with hash "${hash4}"`;
         super(`${identifier} could not be found.`, {
           name: "TransactionNotFoundError"
         });
       }
     };
     TransactionReceiptNotFoundError = class extends BaseError2 {
-      constructor({ hash: hash3 }) {
-        super(`Transaction receipt with hash "${hash3}" could not be found. The Transaction may not be processed on a block yet.`, {
+      constructor({ hash: hash4 }) {
+        super(`Transaction receipt with hash "${hash4}" could not be found. The Transaction may not be processed on a block yet.`, {
           name: "TransactionReceiptNotFoundError"
         });
       }
@@ -5406,8 +5406,8 @@ var init_transaction = __esm({
       }
     };
     WaitForTransactionReceiptTimeoutError = class extends BaseError2 {
-      constructor({ hash: hash3 }) {
-        super(`Timed out while waiting for transaction with hash "${hash3}" to be confirmed.`, { name: "WaitForTransactionReceiptTimeoutError" });
+      constructor({ hash: hash4 }) {
+        super(`Timed out while waiting for transaction with hash "${hash4}" to be confirmed.`, { name: "WaitForTransactionReceiptTimeoutError" });
       }
     };
   }
@@ -6538,24 +6538,24 @@ var init_hmac = __esm({
     init_browser_buffer_global();
     init_utils2();
     HMAC = class extends Hash {
-      constructor(hash3, _key) {
+      constructor(hash4, _key) {
         super();
         this.finished = false;
         this.destroyed = false;
-        ahash(hash3);
+        ahash(hash4);
         const key = toBytes2(_key);
-        this.iHash = hash3.create();
+        this.iHash = hash4.create();
         if (typeof this.iHash.update !== "function")
           throw new Error("Expected instance of class which extends utils.Hash");
         this.blockLen = this.iHash.blockLen;
         this.outputLen = this.iHash.outputLen;
         const blockLen = this.blockLen;
         const pad4 = new Uint8Array(blockLen);
-        pad4.set(key.length > blockLen ? hash3.create().update(key).digest() : key);
+        pad4.set(key.length > blockLen ? hash4.create().update(key).digest() : key);
         for (let i = 0; i < pad4.length; i++)
           pad4[i] ^= 54;
         this.iHash.update(pad4);
-        this.oHash = hash3.create();
+        this.oHash = hash4.create();
         for (let i = 0; i < pad4.length; i++)
           pad4[i] ^= 54 ^ 92;
         this.oHash.update(pad4);
@@ -6601,8 +6601,8 @@ var init_hmac = __esm({
         this.iHash.destroy();
       }
     };
-    hmac = (hash3, key, message) => new HMAC(hash3, key).update(message).digest();
-    hmac.create = (hash3, key) => new HMAC(hash3, key);
+    hmac = (hash4, key, message) => new HMAC(hash4, key).update(message).digest();
+    hmac.create = (hash4, key) => new HMAC(hash4, key);
   }
 });
 
@@ -8025,14 +8025,14 @@ function weierstrass(curveDef) {
   function prepSig(msgHash, privateKey, opts = defaultSigOpts) {
     if (["recovered", "canonical"].some((k) => k in opts))
       throw new Error("sign() legacy options not supported");
-    const { hash: hash3, randomBytes: randomBytes3 } = CURVE;
+    const { hash: hash4, randomBytes: randomBytes3 } = CURVE;
     let { lowS, prehash, extraEntropy: ent } = opts;
     if (lowS == null)
       lowS = true;
     msgHash = ensureBytes("msgHash", msgHash);
     validateSigVerOpts(opts);
     if (prehash)
-      msgHash = ensureBytes("prehashed msgHash", hash3(msgHash));
+      msgHash = ensureBytes("prehashed msgHash", hash4(msgHash));
     const h1int = bits2int_modN(msgHash);
     const d = normPrivateKeyToScalar(privateKey);
     const seedArgs = [int2octets(d), int2octets(h1int)];
@@ -8356,15 +8356,15 @@ var init_weierstrass = __esm({
 });
 
 // node_modules/viem/node_modules/@noble/curves/esm/_shortw_utils.js
-function getHash(hash3) {
+function getHash(hash4) {
   return {
-    hash: hash3,
-    hmac: (key, ...msgs) => hmac(hash3, key, concatBytes(...msgs)),
+    hash: hash4,
+    hmac: (key, ...msgs) => hmac(hash4, key, concatBytes(...msgs)),
     randomBytes
   };
 }
 function createCurve(curveDef, defHash) {
-  const create2 = (hash3) => weierstrass({ ...curveDef, ...getHash(hash3) });
+  const create2 = (hash4) => weierstrass({ ...curveDef, ...getHash(hash4) });
   return { ...create2(defHash), create: create2 };
 }
 var init_shortw_utils = __esm({
@@ -8443,7 +8443,7 @@ function hash_to_field(msg, count, options) {
     k: "isSafeInteger",
     hash: "hash"
   });
-  const { p, k, m, hash: hash3, expand, DST: _DST } = options;
+  const { p, k, m, hash: hash4, expand, DST: _DST } = options;
   abytes2(msg);
   anum(count);
   const DST = typeof _DST === "string" ? utf8ToBytes2(_DST) : _DST;
@@ -8452,9 +8452,9 @@ function hash_to_field(msg, count, options) {
   const len_in_bytes = count * m * L;
   let prb;
   if (expand === "xmd") {
-    prb = expand_message_xmd(msg, DST, len_in_bytes, hash3);
+    prb = expand_message_xmd(msg, DST, len_in_bytes, hash4);
   } else if (expand === "xof") {
-    prb = expand_message_xof(msg, DST, len_in_bytes, k, hash3);
+    prb = expand_message_xof(msg, DST, len_in_bytes, k, hash4);
   } else if (expand === "_internal_pass") {
     prb = msg;
   } else {
@@ -11593,6 +11593,9 @@ function tableCell(value) {
   return cell;
 }
 
+// circle/arc/src/arc-invoice-data.ts
+init_browser_buffer_global();
+
 // node_modules/viem/_esm/index.js
 init_browser_buffer_global();
 init_exports();
@@ -11789,8 +11792,8 @@ init_isHex();
 init_size();
 init_fromHex();
 init_toHex();
-async function recoverPublicKey({ hash: hash3, signature }) {
-  const hashHex = isHex(hash3) ? hash3 : toHex(hash3);
+async function recoverPublicKey({ hash: hash4, signature }) {
+  const hashHex = isHex(hash4) ? hash4 : toHex(hash4);
   const { secp256k1: secp256k13 } = await Promise.resolve().then(() => (init_secp256k1(), secp256k1_exports));
   const signature_ = (() => {
     if (typeof signature === "object" && "r" in signature && "s" in signature) {
@@ -11820,8 +11823,8 @@ function toRecoveryBit(yParityOrV) {
 }
 
 // node_modules/viem/_esm/utils/signature/recoverAddress.js
-async function recoverAddress({ hash: hash3, signature }) {
-  return publicKeyToAddress(await recoverPublicKey({ hash: hash3, signature }));
+async function recoverAddress({ hash: hash4, signature }) {
+  return publicKeyToAddress(await recoverPublicKey({ hash: hash4, signature }));
 }
 
 // node_modules/viem/_esm/utils/authorization/hashAuthorization.js
@@ -11929,7 +11932,7 @@ init_keccak256();
 function hashAuthorization(parameters) {
   const { chainId, nonce, to } = parameters;
   const address = parameters.contractAddress ?? parameters.address;
-  const hash3 = keccak256(concatHex([
+  const hash4 = keccak256(concatHex([
     "0x05",
     toRlp([
       chainId ? numberToHex(chainId) : "0x",
@@ -11938,8 +11941,8 @@ function hashAuthorization(parameters) {
     ])
   ]));
   if (to === "bytes")
-    return hexToBytes(hash3);
-  return hash3;
+    return hexToBytes(hash4);
+  return hash4;
 }
 
 // node_modules/viem/_esm/utils/authorization/recoverAuthorizationAddress.js
@@ -13865,9 +13868,9 @@ async function sendTransaction(client, parameters) {
           return await client.request({
             method: "wallet_sendTransaction",
             params: [request]
-          }, { retryCount: 0 }).then((hash3) => {
+          }, { retryCount: 0 }).then((hash4) => {
             supportsWalletNamespace.set(client.uid, true);
-            return hash3;
+            return hash4;
           }).catch((e2) => {
             const walletNamespaceError = e2;
             if (walletNamespaceError.name === "MethodNotFoundRpcError" || walletNamespaceError.name === "MethodNotSupportedRpcError") {
@@ -14219,9 +14222,9 @@ async function getCallsStatus(client, parameters) {
     if (isTransactions) {
       const chainId2 = trim(sliceHex(id, -64, -32));
       const hashes = sliceHex(id, 0, -64).slice(2).match(/.{1,64}/g);
-      const receipts2 = await Promise.all(hashes.map((hash3) => fallbackTransactionErrorMagicIdentifier.slice(2) !== hash3 ? client.request({
+      const receipts2 = await Promise.all(hashes.map((hash4) => fallbackTransactionErrorMagicIdentifier.slice(2) !== hash4 ? client.request({
         method: "eth_getTransactionReceipt",
-        params: [`0x${hash3}`]
+        params: [`0x${hash4}`]
       }, { dedupe: true }) : void 0));
       const status2 = (() => {
         if (receipts2.some((r) => r === null))
@@ -14460,10 +14463,10 @@ function encodedLabelToLabelhash(label) {
     return null;
   if (label.indexOf("]") !== 65)
     return null;
-  const hash3 = `0x${label.slice(1, 65)}`;
-  if (!isHex(hash3))
+  const hash4 = `0x${label.slice(1, 65)}`;
+  if (!isHex(hash4))
     return null;
-  return hash3;
+  return hash4;
 }
 
 // node_modules/viem/_esm/utils/ens/namehash.js
@@ -14486,8 +14489,8 @@ init_toBytes();
 
 // node_modules/viem/_esm/utils/ens/encodeLabelhash.js
 init_browser_buffer_global();
-function encodeLabelhash(hash3) {
-  return `[${hash3.slice(2)}]`;
+function encodeLabelhash(hash4) {
+  return `[${hash4.slice(2)}]`;
 }
 
 // node_modules/viem/_esm/utils/ens/labelhash.js
@@ -17323,24 +17326,24 @@ function randomBytes2(bytesLength = 32) {
 
 // node_modules/ox/node_modules/@noble/hashes/esm/hmac.js
 var HMAC2 = class extends Hash2 {
-  constructor(hash3, _key) {
+  constructor(hash4, _key) {
     super();
     this.finished = false;
     this.destroyed = false;
-    ahash2(hash3);
+    ahash2(hash4);
     const key = toBytes3(_key);
-    this.iHash = hash3.create();
+    this.iHash = hash4.create();
     if (typeof this.iHash.update !== "function")
       throw new Error("Expected instance of class which extends utils.Hash");
     this.blockLen = this.iHash.blockLen;
     this.outputLen = this.iHash.outputLen;
     const blockLen = this.blockLen;
     const pad4 = new Uint8Array(blockLen);
-    pad4.set(key.length > blockLen ? hash3.create().update(key).digest() : key);
+    pad4.set(key.length > blockLen ? hash4.create().update(key).digest() : key);
     for (let i = 0; i < pad4.length; i++)
       pad4[i] ^= 54;
     this.iHash.update(pad4);
-    this.oHash = hash3.create();
+    this.oHash = hash4.create();
     for (let i = 0; i < pad4.length; i++)
       pad4[i] ^= 54 ^ 92;
     this.oHash.update(pad4);
@@ -17386,8 +17389,8 @@ var HMAC2 = class extends Hash2 {
     this.iHash.destroy();
   }
 };
-var hmac2 = (hash3, key, message) => new HMAC2(hash3, key).update(message).digest();
-hmac2.create = (hash3, key) => new HMAC2(hash3, key);
+var hmac2 = (hash4, key, message) => new HMAC2(hash4, key).update(message).digest();
+hmac2.create = (hash4, key) => new HMAC2(hash4, key);
 
 // node_modules/ox/node_modules/@noble/hashes/esm/ripemd160.js
 init_browser_buffer_global();
@@ -18057,13 +18060,13 @@ function checksum2(address) {
     return checksum.get(address);
   assert4(address, { strict: false });
   const hexAddress = address.substring(2).toLowerCase();
-  const hash3 = keccak2562(fromString(hexAddress), { as: "Bytes" });
+  const hash4 = keccak2562(fromString(hexAddress), { as: "Bytes" });
   const characters = hexAddress.split("");
   for (let i = 0; i < 40; i += 2) {
-    if (hash3[i >> 1] >> 4 >= 8 && characters[i]) {
+    if (hash4[i >> 1] >> 4 >= 8 && characters[i]) {
       characters[i] = characters[i].toUpperCase();
     }
-    if ((hash3[i >> 1] & 15) >= 8 && characters[i + 1]) {
+    if ((hash4[i >> 1] & 15) >= 8 && characters[i + 1]) {
       characters[i + 1] = characters[i + 1].toUpperCase();
     }
   }
@@ -20439,14 +20442,14 @@ function weierstrass2(curveDef) {
   function prepSig(msgHash, privateKey, opts = defaultSigOpts) {
     if (["recovered", "canonical"].some((k) => k in opts))
       throw new Error("sign() legacy options not supported");
-    const { hash: hash3, randomBytes: randomBytes3 } = CURVE;
+    const { hash: hash4, randomBytes: randomBytes3 } = CURVE;
     let { lowS, prehash, extraEntropy: ent } = opts;
     if (lowS == null)
       lowS = true;
     msgHash = ensureBytes2("msgHash", msgHash);
     validateSigVerOpts2(opts);
     if (prehash)
-      msgHash = ensureBytes2("prehashed msgHash", hash3(msgHash));
+      msgHash = ensureBytes2("prehashed msgHash", hash4(msgHash));
     const h1int = bits2int_modN(msgHash);
     const d = normPrivateKeyToScalar(privateKey);
     const seedArgs = [int2octets(d), int2octets(h1int)];
@@ -20551,15 +20554,15 @@ function weierstrass2(curveDef) {
 }
 
 // node_modules/ox/node_modules/@noble/curves/esm/_shortw_utils.js
-function getHash2(hash3) {
+function getHash2(hash4) {
   return {
-    hash: hash3,
-    hmac: (key, ...msgs) => hmac2(hash3, key, concatBytes5(...msgs)),
+    hash: hash4,
+    hmac: (key, ...msgs) => hmac2(hash4, key, concatBytes5(...msgs)),
     randomBytes: randomBytes2
   };
 }
 function createCurve2(curveDef, defHash) {
-  const create2 = (hash3) => weierstrass2({ ...curveDef, ...getHash2(hash3) });
+  const create2 = (hash4) => weierstrass2({ ...curveDef, ...getHash2(hash4) });
   return { ...create2(defHash), create: create2 };
 }
 
@@ -21137,14 +21140,14 @@ async function getStorageAt(client, { address, blockHash, blockNumber, blockTag 
 init_browser_buffer_global();
 init_transaction();
 init_toHex();
-async function getTransaction(client, { blockHash, blockNumber, blockTag: blockTag_, hash: hash3, index: index2, sender, nonce }) {
+async function getTransaction(client, { blockHash, blockNumber, blockTag: blockTag_, hash: hash4, index: index2, sender, nonce }) {
   const blockTag = blockTag_ || "latest";
   const blockNumberHex = blockNumber !== void 0 ? numberToHex(blockNumber) : void 0;
   let transaction = null;
-  if (hash3) {
+  if (hash4) {
     transaction = await client.request({
       method: "eth_getTransactionByHash",
-      params: [hash3]
+      params: [hash4]
     }, { dedupe: true });
   } else if (blockHash) {
     transaction = await client.request({
@@ -21167,7 +21170,7 @@ async function getTransaction(client, { blockHash, blockNumber, blockTag: blockT
       blockHash,
       blockNumber,
       blockTag,
-      hash: hash3,
+      hash: hash4,
       index: index2
     });
   const format = client.chain?.formatters?.transaction?.format || formatTransaction;
@@ -21176,10 +21179,10 @@ async function getTransaction(client, { blockHash, blockNumber, blockTag: blockT
 
 // node_modules/viem/_esm/actions/public/getTransactionConfirmations.js
 init_browser_buffer_global();
-async function getTransactionConfirmations(client, { hash: hash3, transactionReceipt }) {
+async function getTransactionConfirmations(client, { hash: hash4, transactionReceipt }) {
   const [blockNumber, transaction] = await Promise.all([
     getAction(client, getBlockNumber, "getBlockNumber")({}),
-    hash3 ? getAction(client, getTransaction, "getTransaction")({ hash: hash3 }) : void 0
+    hash4 ? getAction(client, getTransaction, "getTransaction")({ hash: hash4 }) : void 0
   ]);
   const transactionBlockNumber = transactionReceipt?.blockNumber || transaction?.blockNumber;
   if (!transactionBlockNumber)
@@ -21190,13 +21193,13 @@ async function getTransactionConfirmations(client, { hash: hash3, transactionRec
 // node_modules/viem/_esm/actions/public/getTransactionReceipt.js
 init_browser_buffer_global();
 init_transaction();
-async function getTransactionReceipt(client, { hash: hash3 }) {
+async function getTransactionReceipt(client, { hash: hash4 }) {
   const receipt = await client.request({
     method: "eth_getTransactionReceipt",
-    params: [hash3]
+    params: [hash4]
   }, { dedupe: true });
   if (!receipt)
-    throw new TransactionReceiptNotFoundError({ hash: hash3 });
+    throw new TransactionReceiptNotFoundError({ hash: hash4 });
   const format = client.chain?.formatters?.transactionReceipt?.format || formatTransactionReceipt;
   return format(receipt, "getTransactionReceipt");
 }
@@ -22129,7 +22132,7 @@ function serializeSignature({ r, s, to = "hex", v, yParity }) {
 // node_modules/viem/_esm/actions/public/verifyHash.js
 init_call();
 async function verifyHash2(client, parameters) {
-  const { address, chain = client.chain, hash: hash3, erc6492VerifierAddress: verifierAddress = parameters.universalSignatureVerifierAddress ?? chain?.contracts?.erc6492Verifier?.address, multicallAddress = parameters.multicallAddress ?? chain?.contracts?.multicall3?.address, mode = "auto" } = parameters;
+  const { address, chain = client.chain, hash: hash4, erc6492VerifierAddress: verifierAddress = parameters.universalSignatureVerifierAddress ?? chain?.contracts?.erc6492Verifier?.address, multicallAddress = parameters.multicallAddress ?? chain?.contracts?.multicall3?.address, mode = "auto" } = parameters;
   if (chain?.verifyHash)
     return await chain.verifyHash(client, parameters);
   const signature = (() => {
@@ -22143,7 +22146,7 @@ async function verifyHash2(client, parameters) {
   try {
     if (mode === "eoa") {
       try {
-        const verified = isAddressEqual(getAddress(address), await recoverAddress({ hash: hash3, signature }));
+        const verified = isAddressEqual(getAddress(address), await recoverAddress({ hash: hash4, signature }));
         if (verified)
           return true;
       } catch {
@@ -22163,7 +22166,7 @@ async function verifyHash2(client, parameters) {
   } catch (error) {
     if (mode !== "eoa") {
       try {
-        const verified = isAddressEqual(getAddress(address), await recoverAddress({ hash: hash3, signature }));
+        const verified = isAddressEqual(getAddress(address), await recoverAddress({ hash: hash4, signature }));
         if (verified)
           return true;
       } catch {
@@ -22176,7 +22179,7 @@ async function verifyHash2(client, parameters) {
   }
 }
 async function verifyErc8010(client, parameters) {
-  const { address, blockNumber, blockTag, hash: hash3, multicallAddress } = parameters;
+  const { address, blockNumber, blockTag, hash: hash4, multicallAddress } = parameters;
   const { authorization: authorization_ox, data: initData, signature, to } = SignatureErc8010_exports.unwrap(parameters.signature);
   const code = await getCode(client, {
     address,
@@ -22188,7 +22191,7 @@ async function verifyErc8010(client, parameters) {
       address,
       blockNumber,
       blockTag,
-      hash: hash3,
+      hash: hash4,
       signature
     });
   const authorization = {
@@ -22227,7 +22230,7 @@ async function verifyErc8010(client, parameters) {
           callData: encodeFunctionData({
             abi: erc1271Abi,
             functionName: "isValidSignature",
-            args: [hash3, signature]
+            args: [hash4, signature]
           })
         }
       ]
@@ -22239,7 +22242,7 @@ async function verifyErc8010(client, parameters) {
   throw new VerificationError();
 }
 async function verifyErc6492(client, parameters) {
-  const { address, factory, factoryData, hash: hash3, signature, verifierAddress, ...rest } = parameters;
+  const { address, factory, factoryData, hash: hash4, signature, verifierAddress, ...rest } = parameters;
   const wrappedSignature = await (async () => {
     if (!factory && !factoryData)
       return signature;
@@ -22256,13 +22259,13 @@ async function verifyErc6492(client, parameters) {
     data: encodeFunctionData({
       abi: erc6492SignatureValidatorAbi,
       functionName: "isValidSig",
-      args: [address, hash3, wrappedSignature]
+      args: [address, hash4, wrappedSignature]
     }),
     ...rest
   } : {
     data: encodeDeployData({
       abi: erc6492SignatureValidatorAbi,
-      args: [address, hash3, wrappedSignature],
+      args: [address, hash4, wrappedSignature],
       bytecode: erc6492SignatureValidatorByteCode
     }),
     ...rest
@@ -22277,11 +22280,11 @@ async function verifyErc6492(client, parameters) {
   throw new VerificationError();
 }
 async function verifyErc1271(client, parameters) {
-  const { address, blockNumber, blockTag, hash: hash3, signature } = parameters;
+  const { address, blockNumber, blockTag, hash: hash4, signature } = parameters;
   const result = await getAction(client, readContract, "readContract")({
     address,
     abi: erc1271Abi,
-    args: [hash3, signature],
+    args: [hash4, signature],
     blockNumber,
     blockTag,
     functionName: "isValidSignature"
@@ -22300,12 +22303,12 @@ var VerificationError = class extends Error {
 // node_modules/viem/_esm/actions/public/verifyMessage.js
 init_browser_buffer_global();
 async function verifyMessage2(client, { address, message, factory, factoryData, signature, ...callRequest }) {
-  const hash3 = hashMessage(message);
+  const hash4 = hashMessage(message);
   return getAction(client, verifyHash2, "verifyHash")({
     address,
     factory,
     factoryData,
-    hash: hash3,
+    hash: hash4,
     signature,
     ...callRequest
   });
@@ -22315,12 +22318,12 @@ async function verifyMessage2(client, { address, message, factory, factoryData, 
 init_browser_buffer_global();
 async function verifyTypedData2(client, parameters) {
   const { address, factory, factoryData, signature, message, primaryType, types, domain, ...callRequest } = parameters;
-  const hash3 = hashTypedData({ message, primaryType, types, domain });
+  const hash4 = hashTypedData({ message, primaryType, types, domain });
   return getAction(client, verifyHash2, "verifyHash")({
     address,
     factory,
     factoryData,
-    hash: hash3,
+    hash: hash4,
     signature,
     ...callRequest
   });
@@ -22432,14 +22435,14 @@ async function waitForTransactionReceipt(client, parameters) {
   const {
     checkReplacement = true,
     confirmations = 1,
-    hash: hash3,
+    hash: hash4,
     onReplaced,
     retryCount = 6,
     retryDelay = ({ count }) => ~~(1 << count) * 200,
     // exponential backoff
     timeout = 18e4
   } = parameters;
-  const observerId = stringify(["waitForTransactionReceipt", client.uid, hash3]);
+  const observerId = stringify(["waitForTransactionReceipt", client.uid, hash4]);
   const pollingInterval = (() => {
     if (parameters.pollingInterval)
       return parameters.pollingInterval;
@@ -22457,10 +22460,10 @@ async function waitForTransactionReceipt(client, parameters) {
   const timer = timeout ? setTimeout(() => {
     _unwatch?.();
     _unobserve?.();
-    reject(new WaitForTransactionReceiptTimeoutError({ hash: hash3 }));
+    reject(new WaitForTransactionReceiptTimeoutError({ hash: hash4 }));
   }, timeout) : void 0;
   _unobserve = observe(observerId, { onReplaced, resolve, reject }, async (emit) => {
-    receipt = await getAction(client, getTransactionReceipt, "getTransactionReceipt")({ hash: hash3 }).catch(() => void 0);
+    receipt = await getAction(client, getTransactionReceipt, "getTransactionReceipt")({ hash: hash4 }).catch(() => void 0);
     if (receipt && confirmations <= 1) {
       clearTimeout(timer);
       emit.resolve(receipt);
@@ -22492,7 +22495,7 @@ async function waitForTransactionReceipt(client, parameters) {
           if (checkReplacement && !transaction) {
             retrying = true;
             await withRetry(async () => {
-              transaction = await getAction(client, getTransaction, "getTransaction")({ hash: hash3 });
+              transaction = await getAction(client, getTransaction, "getTransaction")({ hash: hash4 });
               if (transaction.blockNumber)
                 blockNumber = transaction.blockNumber;
             }, {
@@ -22501,7 +22504,7 @@ async function waitForTransactionReceipt(client, parameters) {
             });
             retrying = false;
           }
-          receipt = await getAction(client, getTransactionReceipt, "getTransactionReceipt")({ hash: hash3 });
+          receipt = await getAction(client, getTransactionReceipt, "getTransactionReceipt")({ hash: hash4 });
           if (confirmations > 1 && (!receipt.blockNumber || blockNumber - receipt.blockNumber + 1n < confirmations))
             return;
           done(() => emit.resolve(receipt));
@@ -22880,8 +22883,8 @@ function watchPendingTransactions(client, { batch = true, onError, onTransaction
           if (batch)
             emit.onTransactions(hashes);
           else
-            for (const hash3 of hashes)
-              emit.onTransactions([hash3]);
+            for (const hash4 of hashes)
+              emit.onTransactions([hash4]);
         } catch (err) {
           emit.onError?.(err);
         }
@@ -22995,10 +22998,10 @@ async function verifySiweMessage(client, parameters) {
   });
   if (!isValid)
     return false;
-  const hash3 = hashMessage(message);
+  const hash4 = hashMessage(message);
   return verifyHash2(client, {
     address: parsed.address,
-    hash: hash3,
+    hash: hash4,
     signature,
     ...callRequest
   });
@@ -23418,7 +23421,7 @@ async function sendTransactionSync(client, parameters) {
       }, "sendTransaction");
       const isWalletNamespaceSupported = supportsWalletNamespace2.get(client.uid);
       const method = isWalletNamespaceSupported ? "wallet_sendTransaction" : "eth_sendTransaction";
-      const hash3 = await (async () => {
+      const hash4 = await (async () => {
         try {
           return await client.request({
             method,
@@ -23432,9 +23435,9 @@ async function sendTransactionSync(client, parameters) {
             return await client.request({
               method: "wallet_sendTransaction",
               params: [request]
-            }, { retryCount: 0 }).then((hash4) => {
+            }, { retryCount: 0 }).then((hash5) => {
               supportsWalletNamespace2.set(client.uid, true);
-              return hash4;
+              return hash5;
             }).catch((e2) => {
               const walletNamespaceError = e2;
               if (walletNamespaceError.name === "MethodNotFoundRpcError" || walletNamespaceError.name === "MethodNotSupportedRpcError") {
@@ -23449,7 +23452,7 @@ async function sendTransactionSync(client, parameters) {
       })();
       const receipt = await getAction(client, waitForTransactionReceipt, "waitForTransactionReceipt")({
         checkReplacement: false,
-        hash: hash3,
+        hash: hash4,
         pollingInterval,
         timeout
       });
@@ -23984,6 +23987,166 @@ init_formatEther();
 init_formatGwei();
 init_formatUnits();
 
+// circle/arc/src/arc-invoice-data.ts
+var PUBLIC_INVOICE_CONTRACT = "0xda11c8b98f17164180eed93c4b62bc60407692d1";
+var INVOICE_STORAGE_KEY = "arcinvoice.browser.invoices.v1";
+var invoiceReadAbi = parseAbi([
+  "function getInvoice(bytes32 invoiceId) view returns ((address merchant, address payer, uint256 amount, uint64 createdAt, uint64 paidAt, string metadataURI, uint8 status))"
+]);
+var ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+var hashPattern = /^0x[0-9a-fA-F]{64}$/;
+var statuses = ["draft", "registered", "paid", "cancelled"];
+function text(value) {
+  if (typeof value !== "string" || value.length > 240) throw new Error("Invoice text must be at most 240 characters.");
+  return value.trim();
+}
+function invoiceAmount(value) {
+  const amount = text(value);
+  if (!/^\d{1,78}(\.\d{1,18})?$/.test(amount)) throw new Error("Enter a positive USDC amount with at most 18 decimals.");
+  const units = parseEther(amount);
+  if (units <= 0n || units >= 2n ** 256n) throw new Error("USDC amount is outside the supported range.");
+  return formatEther(units);
+}
+function wallet(value) {
+  if (typeof value !== "string" || !isAddress(value) || value.toLowerCase() === ZERO_ADDRESS) {
+    throw new Error("Invoice requires a valid nonzero wallet or contract address.");
+  }
+  return value;
+}
+function hash3(value) {
+  if (typeof value !== "string" || !hashPattern.test(value)) throw new Error("Invalid invoice or transaction hash.");
+  return value;
+}
+function validateInvoice(value) {
+  if (!value || typeof value !== "object") throw new Error("Invalid invoice record.");
+  const record = value;
+  const id = text(record.id);
+  if (!/^[A-Za-z0-9-]{1,100}$/.test(id)) throw new Error("Invalid invoice ID.");
+  const amount = invoiceAmount(record.amount);
+  if (invoiceAmount(record.totalDue) !== amount) throw new Error("Invoice totals do not match.");
+  if (!statuses.includes(record.status)) throw new Error("Invalid invoice status.");
+  const dueDate = text(record.dueDate);
+  if (dueDate && (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate) || !Number.isFinite(Date.parse(dueDate)))) {
+    throw new Error("Invalid invoice due date.");
+  }
+  const result = {
+    id,
+    chainInvoiceId: hash3(record.chainInvoiceId),
+    merchantWallet: wallet(record.merchantWallet),
+    merchantName: text(record.merchantName),
+    customerName: text(record.customerName),
+    customerEmail: text(record.customerEmail),
+    description: text(record.description),
+    amount,
+    totalDue: amount,
+    dueDate,
+    status: record.status,
+    createdAt: text(record.createdAt),
+    updatedAt: text(record.updatedAt)
+  };
+  for (const key of ["contractAddress", "payer"]) {
+    if (record[key] !== void 0) result[key] = wallet(record[key]);
+  }
+  for (const key of ["registrationTxHash", "paymentTxHash", "cancellationTxHash"]) {
+    if (record[key] !== void 0) result[key] = hash3(record[key]);
+  }
+  if (result.status !== "draft" && !result.contractAddress) throw new Error("Registered invoice has no contract.");
+  return result;
+}
+function createInvoiceDraft(fields) {
+  const id = `INV-${crypto.randomUUID()}`;
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  return validateInvoice({
+    ...fields,
+    id,
+    chainInvoiceId: keccak256(toBytes(id)),
+    status: "draft",
+    amount: fields.amount,
+    totalDue: fields.amount,
+    createdAt: now,
+    updatedAt: now
+  });
+}
+function readBrowserInvoices(storage) {
+  const raw = storage.getItem(INVOICE_STORAGE_KEY);
+  if (raw === null) return [];
+  if (raw.length > 1e6) throw new Error("Browser invoice history is too large.");
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("Browser invoice history is damaged; it has not been overwritten.");
+  }
+  if (!Array.isArray(parsed) || parsed.length > 100) throw new Error("Invalid browser invoice history.");
+  const records = parsed.map(validateInvoice);
+  if (new Set(records.map((record) => record.id)).size !== records.length) throw new Error("Duplicate invoice IDs in browser history.");
+  return records;
+}
+function saveBrowserInvoice(storage, invoice) {
+  const valid = validateInvoice(invoice);
+  const records = readBrowserInvoices(storage);
+  const index2 = records.findIndex((record) => record.id === valid.id);
+  if (index2 < 0) {
+    if (records.length >= 100) throw new Error("Browser history is full (100 invoices). Existing records were preserved.");
+    records.unshift(valid);
+  } else records[index2] = valid;
+  storage.setItem(INVOICE_STORAGE_KEY, JSON.stringify(records));
+}
+function invoiceShareUrl(page, invoice) {
+  if (invoice.contractAddress?.toLowerCase() !== PUBLIC_INVOICE_CONTRACT) {
+    throw new Error("Sharing is available only for the public demo contract.");
+  }
+  const url = new URL(page);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("chainInvoice", hash3(invoice.chainInvoiceId));
+  url.searchParams.set("contract", PUBLIC_INVOICE_CONTRACT);
+  return url;
+}
+function sharedInvoiceReference(page) {
+  const params = new URL(page).searchParams;
+  if (!params.has("chainInvoice") && !params.has("contract")) return null;
+  if (params.getAll("chainInvoice").length !== 1 || params.getAll("contract").length !== 1 || params.get("contract")?.toLowerCase() !== PUBLIC_INVOICE_CONTRACT) {
+    throw new Error("This link does not refer to the public ArcInvoice demo contract.");
+  }
+  return { chainInvoiceId: hash3(params.get("chainInvoice")), contractAddress: PUBLIC_INVOICE_CONTRACT };
+}
+function reconcileInvoice(invoice, chain) {
+  if (chain.status === 0) {
+    if (invoice.status !== "draft") throw new Error("Invoice was not found on Arc Testnet. Cached status is not verified.");
+    return invoice;
+  }
+  if (![1, 2, 3].includes(chain.status) || chain.merchant.toLowerCase() !== invoice.merchantWallet.toLowerCase() || chain.amount !== parseEther(invoice.totalDue)) {
+    throw new Error("On-chain merchant or amount does not match this invoice. No payment submitted.");
+  }
+  return validateInvoice({
+    ...invoice,
+    status: statuses[chain.status],
+    payer: chain.status === 2 ? chain.payer : void 0,
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+}
+function importChainInvoice(reference, chain) {
+  if (![1, 2, 3].includes(chain.status)) throw new Error("Invoice was not found on Arc Testnet.");
+  const amount = formatEther(chain.amount);
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  return reconcileInvoice(validateInvoice({
+    ...reference,
+    id: `ARC-${reference.chainInvoiceId.slice(2)}`,
+    merchantWallet: chain.merchant,
+    merchantName: "On-chain merchant",
+    customerName: "Not shared",
+    customerEmail: "",
+    description: "",
+    amount,
+    totalDue: amount,
+    dueDate: "",
+    status: "draft",
+    createdAt: now,
+    updatedAt: now
+  }), chain);
+}
+
 // circle/arc/src/arc-invoice.ts
 var ARC_TESTNET = {
   chainId: "0x4cef52",
@@ -23999,8 +24162,7 @@ var arcTestnet = {
   rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } },
   blockExplorers: { default: { name: "ArcScan", url: "https://testnet.arcscan.app" } }
 };
-var DEFAULT_CONTRACT_ADDRESS = "0xda11c8b98f17164180eed93c4b62bc60407692d1";
-var ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+var ZERO_ADDRESS2 = "0x0000000000000000000000000000000000000000";
 var arcInvoiceAbi = [
   {
     inputs: [
@@ -24100,8 +24262,11 @@ var account = null;
 var selectedProvider = null;
 var invoices = [];
 var selectedId = "";
-var contractAddress = localStorage.getItem("arcinvoice.contractAddress") ?? DEFAULT_CONTRACT_ADDRESS;
+var contractAddress = PUBLIC_INVOICE_CONTRACT;
 var currentQuote = null;
+var verifiedInvoices = /* @__PURE__ */ new Set();
+var invoiceBusy = false;
+var selectionVersion = 0;
 var el = {
   connect: document.querySelector("#connect"),
   walletAddress: document.querySelector("#walletAddress"),
@@ -24129,6 +24294,7 @@ var el = {
   payInvoice: document.querySelector("#payInvoice"),
   cancelInvoice: document.querySelector("#cancelInvoice"),
   copyLink: document.querySelector("#copyLink"),
+  verification: document.querySelector("#verification"),
   quoteTitle: document.querySelector("#quoteTitle"),
   quoteBuyer: document.querySelector("#quoteBuyer"),
   quoteAmount: document.querySelector("#quoteAmount"),
@@ -24147,14 +24313,15 @@ var el = {
   stepPaid: document.querySelector("#stepPaid")
 };
 el.contractAddress.value = contractAddress;
+el.deployContract.hidden = !["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
 el.dueDate.value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3).toISOString().slice(0, 10);
 var today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
 el.quoteTitle.value = `arc-quote-${today}`;
-el.quoteBuyer.value = ZERO_ADDRESS;
+el.quoteBuyer.value = ZERO_ADDRESS2;
 el.quoteAmount.value = "0.003";
 el.quoteMetadataURI.value = `local:arc-quote-${today}:metadata`;
 el.quoteAcceptanceURI.value = `local:arc-quote-${today}:accepted`;
-el.quoteSettlementTo.value = ZERO_ADDRESS;
+el.quoteSettlementTo.value = ZERO_ADDRESS2;
 function shortHash(value) {
   if (!value) return "-";
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
@@ -24165,20 +24332,6 @@ function setStatus(message) {
 function errorMessage(error) {
   console.error(error);
   return error instanceof Error ? error.message : "Unknown error.";
-}
-async function requestJson(path, init) {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers ?? {}
-    }
-  });
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null);
-    throw new Error(payload?.error ?? `Request failed with ${response.status}`);
-  }
-  return response.json();
 }
 async function getEthereumProvider() {
   const injected = window.ethereum;
@@ -24231,6 +24384,15 @@ async function refreshBalance() {
   const balance = await publicClient.getBalance({ address: account });
   el.nativeBalance.textContent = `${formatEther(balance)} USDC`;
 }
+async function assertInvoiceWallet() {
+  await ensureArc();
+  if (!selectedProvider || !account) throw new Error("Connect your wallet first.");
+  const accounts = await selectedProvider.request({ method: "eth_accounts" });
+  const chainId = await selectedProvider.request({ method: "eth_chainId" });
+  if (accounts[0]?.toLowerCase() !== account.toLowerCase() || Number(chainId) !== arcTestnet.id) {
+    throw new Error("Wallet account or network changed. Reconnect before submitting.");
+  }
+}
 async function connect() {
   try {
     setStatus("Connecting wallet...");
@@ -24250,10 +24412,10 @@ async function connect() {
     if (!el.merchantWallet.value.trim()) {
       el.merchantWallet.value = account;
     }
-    if (el.quoteBuyer.value === ZERO_ADDRESS) {
+    if (el.quoteBuyer.value === ZERO_ADDRESS2) {
       el.quoteBuyer.value = account;
     }
-    if (el.quoteSettlementTo.value === ZERO_ADDRESS) {
+    if (el.quoteSettlementTo.value === ZERO_ADDRESS2) {
       el.quoteSettlementTo.value = account;
     }
     await refreshBalance();
@@ -24270,7 +24432,7 @@ function selectedInvoice() {
 function quoteId() {
   const title = el.quoteTitle.value.trim();
   if (!title) throw new Error("Quote title is required.");
-  const seller = (account?.toLowerCase() ?? el.merchantWallet.value.trim().toLowerCase()) || ZERO_ADDRESS.toLowerCase();
+  const seller = (account?.toLowerCase() ?? el.merchantWallet.value.trim().toLowerCase()) || ZERO_ADDRESS2.toLowerCase();
   return keccak256(toBytes(`arc-quote:${seller}:${title}`));
 }
 function quoteStatusLabel(status) {
@@ -24284,8 +24446,8 @@ function quoteFromRaw(value) {
   if (!Array.isArray(value)) {
     const object = value;
     return {
-      seller: object.seller ?? ZERO_ADDRESS,
-      buyer: object.buyer ?? ZERO_ADDRESS,
+      seller: object.seller ?? ZERO_ADDRESS2,
+      buyer: object.buyer ?? ZERO_ADDRESS2,
       amount: object.amount ?? 0n,
       createdAt: object.createdAt ?? 0n,
       acceptedAt: object.acceptedAt ?? 0n,
@@ -24381,7 +24543,7 @@ function renderQuote() {
   } catch {
     el.quoteId.textContent = "-";
   }
-  if (!currentQuote || currentQuote.seller === ZERO_ADDRESS) {
+  if (!currentQuote || currentQuote.seller === ZERO_ADDRESS2) {
     el.quoteStatus.textContent = "none";
     updateActions();
     return;
@@ -24400,44 +24562,107 @@ function updateActions() {
   updateContractSummary();
   const invoice = selectedInvoice();
   const quoteState = currentQuote?.status ?? 0;
-  const quoteExists = Boolean(currentQuote && currentQuote.seller !== ZERO_ADDRESS);
-  el.registerInvoice.disabled = !account || !walletClient || !invoice || invoice.status !== "draft" || !contractAddress;
-  el.payInvoice.disabled = !account || !walletClient || !invoice || invoice.status !== "registered" || !contractAddress;
-  el.cancelInvoice.disabled = !account || !walletClient || !invoice || invoice.status !== "registered" || !contractAddress;
-  el.copyLink.disabled = !invoice;
+  const quoteExists = Boolean(currentQuote && currentQuote.seller !== ZERO_ADDRESS2);
+  const merchant = Boolean(invoice && account && invoice.merchantWallet.toLowerCase() === account.toLowerCase());
+  const verified = Boolean(invoice && verifiedInvoices.has(invoice.id));
+  el.registerInvoice.disabled = invoiceBusy || !merchant || !walletClient || !invoice || invoice.status !== "draft" || !contractAddress;
+  el.payInvoice.disabled = invoiceBusy || !account || !walletClient || !invoice || invoice.status !== "registered" || !verified;
+  el.cancelInvoice.disabled = invoiceBusy || !merchant || !walletClient || !invoice || invoice.status !== "registered" || !verified;
+  el.copyLink.disabled = invoiceBusy || !invoice || invoice.status === "draft" || !verified || invoice.contractAddress?.toLowerCase() !== PUBLIC_INVOICE_CONTRACT;
+  el.refreshInvoices.disabled = invoiceBusy;
   el.createQuote.disabled = !account || !walletClient || !contractAddress || quoteExists;
   el.acceptQuote.disabled = !account || !walletClient || !contractAddress || !quoteExists || quoteState !== 1;
   el.settleQuote.disabled = !account || !walletClient || !contractAddress || !quoteExists || quoteState !== 2;
   el.cancelQuote.disabled = !account || !walletClient || !contractAddress || !quoteExists || quoteState !== 1;
   el.refreshQuote.disabled = !contractAddress;
 }
+function renderInvoiceState() {
+  renderRows();
+  renderReceipt();
+  updateActions();
+}
+function rememberInvoice(invoice) {
+  invoices = [invoice, ...invoices.filter((item) => item.id !== invoice.id)];
+  saveBrowserInvoice(localStorage, invoice);
+}
+async function readInvoice(invoice) {
+  if (!invoice.contractAddress) throw new Error("Invoice has no registered contract.");
+  return publicClient.readContract({
+    address: invoice.contractAddress,
+    abi: invoiceReadAbi,
+    functionName: "getInvoice",
+    args: [invoice.chainInvoiceId]
+  });
+}
+async function syncInvoice(invoice) {
+  verifiedInvoices.delete(invoice.id);
+  const updated = reconcileInvoice(invoice, await readInvoice(invoice));
+  rememberInvoice(updated);
+  verifiedInvoices.add(updated.id);
+  return updated;
+}
+async function refreshSelectedInvoice() {
+  const invoice = selectedInvoice();
+  const version5 = ++selectionVersion;
+  el.verification.textContent = invoice?.contractAddress ? "Checking Arc Testnet..." : "Browser-only draft. Not registered on-chain.";
+  if (!invoice?.contractAddress) return;
+  verifiedInvoices.delete(invoice.id);
+  updateActions();
+  try {
+    const updated = await syncInvoice(invoice);
+    if (version5 !== selectionVersion) return;
+    el.verification.textContent = updated.status === "draft" ? "Not registered on Arc Testnet." : "Status, merchant and amount verified on Arc Testnet.";
+  } catch (error) {
+    if (version5 !== selectionVersion) return;
+    el.verification.textContent = "On-chain status unavailable. Payment and sharing disabled.";
+    setStatus(errorMessage(error));
+  } finally {
+    if (version5 === selectionVersion) renderInvoiceState();
+  }
+}
 function selectInvoice(id) {
+  if (invoiceBusy) return;
   selectedId = id;
   if (selectedId) {
     const url = new URL(window.location.href);
+    url.search = "";
     url.searchParams.set("invoice", selectedId);
     window.history.replaceState(null, "", url);
   }
-  renderRows();
-  renderReceipt();
-  updateActions();
+  renderInvoiceState();
+  void refreshSelectedInvoice();
 }
 async function loadInvoices() {
-  const payload = await requestJson("/api/arcinvoice/invoices");
-  invoices = payload.invoices;
+  invoices = readBrowserInvoices(localStorage);
+  verifiedInvoices.clear();
+  const reference = sharedInvoiceReference(window.location.href);
+  if (reference) {
+    setStatus("Reading shared invoice from Arc Testnet...");
+    const chain = await readInvoice(reference);
+    const existing = invoices.find((item) => item.chainInvoiceId.toLowerCase() === reference.chainInvoiceId.toLowerCase() && item.contractAddress?.toLowerCase() === reference.contractAddress);
+    const imported = existing ? reconcileInvoice(existing, chain) : importChainInvoice(reference, chain);
+    rememberInvoice(imported);
+    selectedId = imported.id;
+  }
   const requested = new URLSearchParams(window.location.search).get("invoice") ?? "";
+  if (!reference && requested && !invoices.some((invoice) => invoice.id === requested)) {
+    selectedId = "";
+    renderInvoiceState();
+    throw new Error("This draft is not saved in this browser. Legacy local-server links are not public on-chain links.");
+  }
   if (!selectedId && requested && invoices.some((invoice) => invoice.id === requested)) {
     selectedId = requested;
   }
-  if (!selectedId && invoices.length > 0) {
-    selectedId = invoices[0].id;
+  if (!invoices.some((invoice) => invoice.id === selectedId)) {
+    selectedId = invoices[0]?.id ?? "";
   }
-  renderRows();
-  renderReceipt();
-  updateActions();
+  renderInvoiceState();
+  setStatus(invoices.length ? "Browser history loaded. Cached statuses are checked when selected." : "No invoices saved in this browser.");
+  await refreshSelectedInvoice();
 }
 async function createInvoice(event) {
   event.preventDefault();
+  if (invoiceBusy) return;
   const merchantWallet = el.merchantWallet.value.trim();
   if (!isAddress(merchantWallet)) {
     setStatus("Merchant wallet must be a valid EVM address.");
@@ -24445,21 +24670,18 @@ async function createInvoice(event) {
   }
   try {
     setStatus("Creating invoice...");
-    const invoice = await requestJson("/api/arcinvoice/invoices", {
-      method: "POST",
-      body: JSON.stringify({
-        merchantName: el.merchantName.value.trim(),
-        merchantWallet,
-        customerName: el.customerName.value.trim(),
-        customerEmail: el.customerEmail.value.trim(),
-        amount: el.amount.value.trim(),
-        description: el.description.value.trim(),
-        dueDate: el.dueDate.value
-      })
+    const invoice = createInvoiceDraft({
+      merchantName: el.merchantName.value.trim(),
+      merchantWallet,
+      customerName: el.customerName.value.trim(),
+      customerEmail: el.customerEmail.value.trim(),
+      amount: el.amount.value.trim(),
+      description: el.description.value.trim(),
+      dueDate: el.dueDate.value
     });
-    invoices = [invoice, ...invoices.filter((item) => item.id !== invoice.id)];
+    rememberInvoice(invoice);
     selectInvoice(invoice.id);
-    setStatus(`Invoice ${invoice.id} created.`);
+    setStatus(`Invoice ${invoice.id} saved in this browser only.`);
   } catch (error) {
     setStatus(errorMessage(error));
   }
@@ -24481,19 +24703,18 @@ async function deployContract2() {
     const artifact = await loadArtifact();
     el.deployContract.disabled = true;
     setStatus("Deploying ArcInvoice contract...");
-    const hash3 = await walletClient.deployContract({
+    const hash4 = await walletClient.deployContract({
       abi: arcInvoiceAbi,
       bytecode: artifact.bytecode,
       account,
       chain: arcTestnet
     });
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: hash3 });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: hash4 });
     if (!receipt.contractAddress) {
       throw new Error("Deployment receipt did not include a contract address.");
     }
     contractAddress = receipt.contractAddress;
     el.contractAddress.value = contractAddress;
-    localStorage.setItem("arcinvoice.contractAddress", contractAddress);
     updateActions();
     setStatus(`Contract deployed at ${contractAddress}.`);
   } catch (error) {
@@ -24504,109 +24725,120 @@ async function deployContract2() {
 }
 async function registerInvoice() {
   const invoice = selectedInvoice();
-  if (!invoice || !walletClient || !account || !contractAddress) return;
+  if (invoiceBusy || !invoice || !walletClient || !account || !contractAddress) return;
+  const target = invoice.contractAddress ?? contractAddress;
+  let submittedHash;
   try {
+    invoiceBusy = true;
+    updateActions();
+    if (invoice.status !== "draft") throw new Error("Only a draft can be registered.");
     if (invoice.merchantWallet.toLowerCase() !== account.toLowerCase()) {
       throw new Error("Connect the merchant wallet listed on this invoice before registering it on Arc.");
     }
-    await ensureArc();
-    el.registerInvoice.disabled = true;
+    await assertInvoiceWallet();
+    const current = { ...invoice, contractAddress: target };
+    const chain = await readInvoice(current);
+    if (chain.status !== 0) {
+      rememberInvoice(reconcileInvoice(current, chain));
+      throw new Error("Invoice already exists on Arc. State refreshed; no duplicate transaction submitted.");
+    }
+    rememberInvoice(current);
     setStatus("Registering invoice on Arc...");
-    const metadataURI = `${window.location.origin}/api/arcinvoice/invoices/${invoice.id}`;
-    const hash3 = await walletClient.writeContract({
-      address: contractAddress,
+    const metadataURI = `urn:arcinvoice:${invoice.chainInvoiceId}`;
+    const hash4 = await walletClient.writeContract({
+      address: target,
       abi: arcInvoiceAbi,
       functionName: "createInvoice",
       args: [invoice.chainInvoiceId, parseEther(invoice.totalDue), metadataURI],
       account,
       chain: arcTestnet
     });
-    await publicClient.waitForTransactionReceipt({ hash: hash3 });
-    const updated = await requestJson(`/api/arcinvoice/invoices/${invoice.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        status: "registered",
-        contractAddress,
-        registrationTxHash: hash3
-      })
-    });
-    invoices = invoices.map((item) => item.id === updated.id ? updated : item);
-    selectInvoice(updated.id);
-    setStatus(`Invoice registered: ${hash3}`);
+    submittedHash = hash4;
+    const pending = { ...current, registrationTxHash: hash4 };
+    rememberInvoice(pending);
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: hash4 });
+    if (receipt.status !== "success") throw new Error("Registration reverted on-chain.");
+    await syncInvoice(pending);
+    setStatus(`Invoice registered: ${hash4}`);
   } catch (error) {
-    setStatus(errorMessage(error));
+    setStatus(`${errorMessage(error)}${submittedHash ? ` Transaction: ${submittedHash}. Refresh state before retrying.` : ""}`);
   } finally {
-    updateActions();
+    invoiceBusy = false;
+    renderInvoiceState();
+    await refreshSelectedInvoice();
   }
 }
 async function payInvoice() {
   const invoice = selectedInvoice();
-  if (!invoice || !walletClient || !account || !contractAddress) return;
+  if (invoiceBusy || !invoice || !walletClient || !account || !invoice.contractAddress) return;
+  let submittedHash;
   try {
-    await ensureArc();
-    el.payInvoice.disabled = true;
+    invoiceBusy = true;
+    updateActions();
+    await assertInvoiceWallet();
+    const current = await syncInvoice(invoice);
+    if (current.status !== "registered") throw new Error("Invoice is no longer payable.");
     setStatus("Submitting USDC payment...");
-    const hash3 = await walletClient.writeContract({
-      address: contractAddress,
+    const hash4 = await walletClient.writeContract({
+      address: invoice.contractAddress,
       abi: arcInvoiceAbi,
       functionName: "payInvoice",
       args: [invoice.chainInvoiceId],
-      value: parseEther(invoice.totalDue),
+      value: parseEther(current.totalDue),
       account,
       chain: arcTestnet
     });
-    await publicClient.waitForTransactionReceipt({ hash: hash3 });
-    const updated = await requestJson(`/api/arcinvoice/invoices/${invoice.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        status: "paid",
-        paymentTxHash: hash3,
-        payer: account
-      })
-    });
-    invoices = invoices.map((item) => item.id === updated.id ? updated : item);
-    selectInvoice(updated.id);
+    submittedHash = hash4;
+    const pending = { ...current, paymentTxHash: hash4 };
+    rememberInvoice(pending);
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: hash4 });
+    if (receipt.status !== "success") throw new Error("Payment reverted on-chain.");
+    await syncInvoice(pending);
     await refreshBalance();
-    setStatus(`Payment confirmed: ${hash3}`);
+    setStatus(`Payment confirmed: ${hash4}`);
   } catch (error) {
-    setStatus(errorMessage(error));
+    setStatus(`${errorMessage(error)}${submittedHash ? ` Transaction: ${submittedHash}. Refresh state before retrying.` : ""}`);
   } finally {
-    updateActions();
+    invoiceBusy = false;
+    renderInvoiceState();
+    await refreshSelectedInvoice();
   }
 }
 async function cancelInvoice() {
   const invoice = selectedInvoice();
-  if (!invoice || !walletClient || !account || !contractAddress) return;
+  if (invoiceBusy || !invoice || !walletClient || !account || !invoice.contractAddress) return;
+  let submittedHash;
   try {
+    invoiceBusy = true;
+    updateActions();
     if (invoice.merchantWallet.toLowerCase() !== account.toLowerCase()) {
       throw new Error("Connect the merchant wallet listed on this invoice before cancelling it.");
     }
-    await ensureArc();
-    el.cancelInvoice.disabled = true;
+    await assertInvoiceWallet();
+    const current = await syncInvoice(invoice);
+    if (current.status !== "registered") throw new Error("Invoice is no longer cancellable.");
     setStatus("Cancelling invoice on Arc...");
-    const hash3 = await walletClient.writeContract({
-      address: contractAddress,
+    const hash4 = await walletClient.writeContract({
+      address: invoice.contractAddress,
       abi: arcInvoiceAbi,
       functionName: "cancelInvoice",
       args: [invoice.chainInvoiceId],
       account,
       chain: arcTestnet
     });
-    await publicClient.waitForTransactionReceipt({ hash: hash3 });
-    const updated = await requestJson(`/api/arcinvoice/invoices/${invoice.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        status: "cancelled",
-        cancellationTxHash: hash3
-      })
-    });
-    invoices = invoices.map((item) => item.id === updated.id ? updated : item);
-    selectInvoice(updated.id);
-    setStatus(`Invoice cancelled: ${hash3}`);
+    submittedHash = hash4;
+    const pending = { ...current, cancellationTxHash: hash4 };
+    rememberInvoice(pending);
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: hash4 });
+    if (receipt.status !== "success") throw new Error("Cancellation reverted on-chain.");
+    await syncInvoice(pending);
+    setStatus(`Invoice cancelled: ${hash4}`);
   } catch (error) {
-    setStatus(errorMessage(error));
+    setStatus(`${errorMessage(error)}${submittedHash ? ` Transaction: ${submittedHash}. Refresh state before retrying.` : ""}`);
   } finally {
-    updateActions();
+    invoiceBusy = false;
+    renderInvoiceState();
+    await refreshSelectedInvoice();
   }
 }
 async function refreshQuote() {
@@ -24639,7 +24871,7 @@ async function createQuote() {
     if (!metadataURI) throw new Error("Quote metadata URI is required.");
     el.createQuote.disabled = true;
     setStatus("Creating quote on Arc...");
-    const hash3 = await walletClient.writeContract({
+    const hash4 = await walletClient.writeContract({
       address: contractAddress,
       abi: arcInvoiceAbi,
       functionName: "createQuote",
@@ -24647,9 +24879,9 @@ async function createQuote() {
       account,
       chain: arcTestnet
     });
-    await publicClient.waitForTransactionReceipt({ hash: hash3 });
+    await publicClient.waitForTransactionReceipt({ hash: hash4 });
     await refreshQuote();
-    setStatus(`Quote created: ${hash3}`);
+    setStatus(`Quote created: ${hash4}`);
   } catch (error) {
     setStatus(errorMessage(error));
   } finally {
@@ -24665,7 +24897,7 @@ async function acceptQuote() {
     el.acceptQuote.disabled = true;
     setStatus("Accepting quote...");
     const amount = currentQuote?.amount ?? parseEther(el.quoteAmount.value.trim());
-    const hash3 = await walletClient.writeContract({
+    const hash4 = await walletClient.writeContract({
       address: contractAddress,
       abi: arcInvoiceAbi,
       functionName: "acceptQuote",
@@ -24674,10 +24906,10 @@ async function acceptQuote() {
       account,
       chain: arcTestnet
     });
-    await publicClient.waitForTransactionReceipt({ hash: hash3 });
+    await publicClient.waitForTransactionReceipt({ hash: hash4 });
     await refreshBalance();
     await refreshQuote();
-    setStatus(`Quote accepted: ${hash3}`);
+    setStatus(`Quote accepted: ${hash4}`);
   } catch (error) {
     setStatus(errorMessage(error));
   } finally {
@@ -24692,7 +24924,7 @@ async function settleQuote() {
     if (!isAddress(settlementTo)) throw new Error("Quote settlement address must be valid.");
     el.settleQuote.disabled = true;
     setStatus("Settling quote...");
-    const hash3 = await walletClient.writeContract({
+    const hash4 = await walletClient.writeContract({
       address: contractAddress,
       abi: arcInvoiceAbi,
       functionName: "settleQuote",
@@ -24700,10 +24932,10 @@ async function settleQuote() {
       account,
       chain: arcTestnet
     });
-    await publicClient.waitForTransactionReceipt({ hash: hash3 });
+    await publicClient.waitForTransactionReceipt({ hash: hash4 });
     await refreshBalance();
     await refreshQuote();
-    setStatus(`Quote settled: ${hash3}`);
+    setStatus(`Quote settled: ${hash4}`);
   } catch (error) {
     setStatus(errorMessage(error));
   } finally {
@@ -24716,7 +24948,7 @@ async function cancelQuote() {
     await ensureArc();
     el.cancelQuote.disabled = true;
     setStatus("Cancelling quote...");
-    const hash3 = await walletClient.writeContract({
+    const hash4 = await walletClient.writeContract({
       address: contractAddress,
       abi: arcInvoiceAbi,
       functionName: "cancelQuote",
@@ -24724,9 +24956,9 @@ async function cancelQuote() {
       account,
       chain: arcTestnet
     });
-    await publicClient.waitForTransactionReceipt({ hash: hash3 });
+    await publicClient.waitForTransactionReceipt({ hash: hash4 });
     await refreshQuote();
-    setStatus(`Quote cancelled: ${hash3}`);
+    setStatus(`Quote cancelled: ${hash4}`);
   } catch (error) {
     setStatus(errorMessage(error));
   } finally {
@@ -24735,11 +24967,13 @@ async function cancelQuote() {
 }
 async function copyInvoiceLink() {
   const invoice = selectedInvoice();
-  if (!invoice) return;
-  const url = new URL(window.location.href);
-  url.searchParams.set("invoice", invoice.id);
-  await navigator.clipboard.writeText(url.toString());
-  setStatus("Invoice link copied.");
+  if (!invoice || invoice.status === "draft" || !verifiedInvoices.has(invoice.id)) return;
+  try {
+    await navigator.clipboard.writeText(invoiceShareUrl(window.location.href, invoice).toString());
+    setStatus("On-chain invoice link copied. Customer details and browser notes are not included.");
+  } catch (error) {
+    setStatus(errorMessage(error));
+  }
 }
 function saveContract() {
   const value = el.contractAddress.value.trim();
@@ -24748,13 +24982,12 @@ function saveContract() {
     return;
   }
   contractAddress = value;
-  localStorage.setItem("arcinvoice.contractAddress", contractAddress);
   updateActions();
   setStatus("Contract loaded.");
 }
 el.connect.addEventListener("click", () => void connect());
 el.invoiceForm.addEventListener("submit", (event) => void createInvoice(event));
-el.refreshInvoices.addEventListener("click", () => void loadInvoices());
+el.refreshInvoices.addEventListener("click", () => void loadInvoices().catch((error) => setStatus(errorMessage(error))));
 el.deployContract.addEventListener("click", () => void deployContract2());
 el.saveContract.addEventListener("click", saveContract);
 el.registerInvoice.addEventListener("click", () => void registerInvoice());

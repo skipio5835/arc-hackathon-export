@@ -6,7 +6,7 @@
   "scripts": {
     "build-arc-radar": "node circle/arc/scripts/build-browser.mjs arc-radar",
     "test-arc-radar": "tsx --test circle/arc/test/arc-radar-core.test.ts circle/arc/test/arc-radar-dex.test.ts circle/arc/test/arc-radar-ads.test.ts circle/arc/test/arc-radar-navigation.test.ts circle/arc/test/arc-radar-market-tools.test.ts circle/arc/test/arc-radar-quality.test.ts circle/arc/test/arc-radar-evidence.test.ts circle/arc/test/arc-radar-authority.test.ts circle/arc/test/arc-radar-theme.test.ts circle/arc/test/arc-radar-i18n.test.ts",
-    "test-security-js": "tsx --test circle/arc/test/server-security.test.ts circle/arc/test/public-release.test.ts circle/arc/test/payment-dom-security.test.ts",
+    "test-security-js": "tsx --test circle/arc/test/server-security.test.ts circle/arc/test/public-release.test.ts circle/arc/test/payment-dom-security.test.ts circle/arc/test/arc-invoice-data.test.ts",
     "test-dependency-security": "node --test circle/arc/test/dependency-security.test.mjs",
     "test-pre-push": "node --test circle/arc/test/pre-push.test.mjs",
     "hooks:install": "node circle/arc/scripts/install-git-hooks.mjs",

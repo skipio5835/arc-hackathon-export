@@ -85,6 +85,7 @@
         margin: 0 auto;
         padding: 24px;
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 16px;
       }
 
@@ -277,6 +278,9 @@
 
       .select-row {
         min-height: 32px;
+        min-width: 64px;
+        white-space: nowrap;
+        overflow-wrap: normal;
         padding: 0 10px;
       }
 
@@ -361,6 +365,10 @@
         overflow-wrap: anywhere;
       }
 
+      td { overflow-wrap: anywhere; }
+      .grid, .stack, .panel, .panel-body, .table-wrap { min-width: 0; }
+      #quoteId { overflow-wrap: anywhere; }
+
       @media (max-width: 980px) {
         .grid,
         .metrics {
@@ -395,13 +403,14 @@
       <header>
         <div>
           <h1>ArcInvoice</h1>
-          <p class="subtle">USDC invoices, onchain receipts, instant Arc settlement</p>
+          <p class="subtle">Arc Testnet invoices and on-chain settlement</p>
         </div>
         <div class="top-actions">
           <span class="pill">Arc Testnet</span>
           <button id="connect" class="secondary" type="button">Connect Wallet</button>
         </div>
       </header>
+      <p class="subtle">Testnet demo. Drafts and customer details stay in this browser, not a shared database. Browser data can be cleared. Test details only.</p>
 
       <section class="metrics" aria-label="Invoice metrics">
         <div class="metric">
@@ -417,7 +426,7 @@
           <strong id="contractSummary">Not loaded</strong>
         </div>
         <div class="metric">
-          <span>Volume</span>
+          <span>Browser history volume (cached)</span>
           <strong id="paidVolume">0.00 USDC</strong>
         </div>
       </section>
@@ -456,7 +465,7 @@
                   <textarea id="description">Design sprint deposit for July launch assets</textarea>
                 </label>
                 <label>
-                  Due date
+                  Due date (reference only)
                   <input id="dueDate" type="date" />
                 </label>
                 <label>
@@ -468,7 +477,7 @@
                 <button id="createInvoice" type="submit">Create Invoice</button>
                 <button id="refreshInvoices" class="ghost" type="button">Refresh</button>
               </div>
-              <p id="statusLine"></p>
+              <p id="statusLine" role="status" aria-live="polite"></p>
             </form>
           </section>
 
@@ -536,7 +545,7 @@
         <div class="stack">
           <section class="panel">
             <div class="panel-head">
-              <h2>Invoices</h2>
+              <h2>Browser History</h2>
               <span id="invoiceCount" class="pill">0 open</span>
             </div>
             <div class="table-wrap">
@@ -546,7 +555,7 @@
                     <th>Invoice</th>
                     <th>Customer</th>
                     <th>Amount</th>
-                    <th>Status</th>
+                    <th>Cached status</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -562,14 +571,15 @@
             </div>
             <div class="panel-body">
               <dl id="receipt" class="receipt"></dl>
+              <p id="verification" class="subtle" role="status">No invoice selected.</p>
               <div class="actions">
                 <button id="registerInvoice" type="button" disabled>Register on Arc</button>
                 <button id="payInvoice" class="warn" type="button" disabled>Pay USDC</button>
                 <button id="cancelInvoice" class="ghost" type="button" disabled>Cancel Invoice</button>
-                <button id="copyLink" class="ghost" type="button" disabled>Copy Link</button>
+                <button id="copyLink" class="ghost" type="button" disabled>Copy On-chain Link</button>
               </div>
               <div class="timeline">
-                <div id="stepDraft" class="step done"><span class="dot"></span><span>Backend invoice record</span></div>
+                <div id="stepDraft" class="step"><span class="dot"></span><span>Browser invoice record</span></div>
                 <div id="stepRegistered" class="step"><span class="dot"></span><span>Arc contract event</span></div>
                 <div id="stepPaid" class="step"><span class="dot"></span><span>USDC settlement receipt</span></div>
               </div>

@@ -1,5 +1,10 @@
 import { arcScanLink, receiptField, tableCell } from "./dom-safety.js";
 import {
+  PUBLIC_INVOICE_CONTRACT, createInvoiceDraft, importChainInvoice, invoiceReadAbi,
+  invoiceShareUrl, readBrowserInvoices, reconcileInvoice, saveBrowserInvoice, sharedInvoiceReference,
+} from "./arc-invoice-data.js";
+import type { Invoice, InvoiceStatus } from "./arc-invoice-data.js";
+import {
   createPublicClient,
   createWalletClient,
   custom,
@@ -21,33 +26,6 @@ declare global {
 type InjectedProvider = EIP1193Provider & {
   isMetaMask?: boolean;
   providers?: Array<EIP1193Provider & { isMetaMask?: boolean }>;
-};
-
-type InvoiceStatus = "draft" | "registered" | "paid" | "cancelled";
-
-type Invoice = {
-  id: string;
-  chainInvoiceId: Hash;
-  merchantName: string;
-  merchantWallet: Address;
-  customerName: string;
-  customerEmail: string;
-  description: string;
-  amount: string;
-  totalDue: string;
-  dueDate: string;
-  status: InvoiceStatus;
-  contractAddress?: Address;
-  registrationTxHash?: Hash;
-  paymentTxHash?: Hash;
-  cancellationTxHash?: Hash;
-  payer?: Address;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type InvoiceListResponse = {
-  invoices: Invoice[];
 };
 
 type Artifact = {
@@ -84,7 +62,6 @@ const arcTestnet = {
   blockExplorers: { default: { name: "ArcScan", url: "https://testnet.arcscan.app" } },
 } as const;
 
-const DEFAULT_CONTRACT_ADDRESS = "0xda11c8b98f17164180eed93c4b62bc60407692d1" as Address;
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as Address;
 
 const arcInvoiceAbi = [
@@ -188,8 +165,11 @@ let account: Address | null = null;
 let selectedProvider: EIP1193Provider | null = null;
 let invoices: Invoice[] = [];
 let selectedId = "";
-let contractAddress = (localStorage.getItem("arcinvoice.contractAddress") ?? DEFAULT_CONTRACT_ADDRESS) as Address | "";
+let contractAddress: Address | "" = PUBLIC_INVOICE_CONTRACT;
 let currentQuote: QuoteSummary | null = null;
+const verifiedInvoices = new Set<string>();
+let invoiceBusy = false;
+let selectionVersion = 0;
 
 const el = {
   connect: document.querySelector<HTMLButtonElement>("#connect")!,
@@ -218,6 +198,7 @@ const el = {
   payInvoice: document.querySelector<HTMLButtonElement>("#payInvoice")!,
   cancelInvoice: document.querySelector<HTMLButtonElement>("#cancelInvoice")!,
   copyLink: document.querySelector<HTMLButtonElement>("#copyLink")!,
+  verification: document.querySelector<HTMLElement>("#verification")!,
   quoteTitle: document.querySelector<HTMLInputElement>("#quoteTitle")!,
   quoteBuyer: document.querySelector<HTMLInputElement>("#quoteBuyer")!,
   quoteAmount: document.querySelector<HTMLInputElement>("#quoteAmount")!,
@@ -237,6 +218,7 @@ const el = {
 };
 
 el.contractAddress.value = contractAddress;
+el.deployContract.hidden = !["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
 el.dueDate.value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 const today = new Date().toISOString().slice(0, 10);
 el.quoteTitle.value = `arc-quote-${today}`;
@@ -279,23 +261,6 @@ function setStatus(message: string): void {
 function errorMessage(error: unknown): string {
   console.error(error);
   return error instanceof Error ? error.message : "Unknown error.";
-}
-
-async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(payload?.error ?? `Request failed with ${response.status}`);
-  }
-
-  return response.json() as Promise<T>;
 }
 
 async function getEthereumProvider(): Promise<EIP1193Provider> {
@@ -357,6 +322,16 @@ async function refreshBalance(): Promise<void> {
   if (!account) return;
   const balance = await publicClient.getBalance({ address: account });
   el.nativeBalance.textContent = `${formatEther(balance)} USDC`;
+}
+
+async function assertInvoiceWallet(): Promise<void> {
+  await ensureArc();
+  if (!selectedProvider || !account) throw new Error("Connect your wallet first.");
+  const accounts = await selectedProvider.request({ method: "eth_accounts" }) as Address[];
+  const chainId = await selectedProvider.request({ method: "eth_chainId" });
+  if (accounts[0]?.toLowerCase() !== account.toLowerCase() || Number(chainId) !== arcTestnet.id) {
+    throw new Error("Wallet account or network changed. Reconnect before submitting.");
+  }
 }
 
 async function connect(): Promise<void> {
@@ -552,10 +527,13 @@ function updateActions(): void {
   const invoice = selectedInvoice();
   const quoteState = currentQuote?.status ?? 0;
   const quoteExists = Boolean(currentQuote && currentQuote.seller !== ZERO_ADDRESS);
-  el.registerInvoice.disabled = !account || !walletClient || !invoice || invoice.status !== "draft" || !contractAddress;
-  el.payInvoice.disabled = !account || !walletClient || !invoice || invoice.status !== "registered" || !contractAddress;
-  el.cancelInvoice.disabled = !account || !walletClient || !invoice || invoice.status !== "registered" || !contractAddress;
-  el.copyLink.disabled = !invoice;
+  const merchant = Boolean(invoice && account && invoice.merchantWallet.toLowerCase() === account.toLowerCase());
+  const verified = Boolean(invoice && verifiedInvoices.has(invoice.id));
+  el.registerInvoice.disabled = invoiceBusy || !merchant || !walletClient || !invoice || invoice.status !== "draft" || !contractAddress;
+  el.payInvoice.disabled = invoiceBusy || !account || !walletClient || !invoice || invoice.status !== "registered" || !verified;
+  el.cancelInvoice.disabled = invoiceBusy || !merchant || !walletClient || !invoice || invoice.status !== "registered" || !verified;
+  el.copyLink.disabled = invoiceBusy || !invoice || invoice.status === "draft" || !verified || invoice.contractAddress?.toLowerCase() !== PUBLIC_INVOICE_CONTRACT;
+  el.refreshInvoices.disabled = invoiceBusy;
   el.createQuote.disabled = !account || !walletClient || !contractAddress || quoteExists;
   el.acceptQuote.disabled = !account || !walletClient || !contractAddress || !quoteExists || quoteState !== 1;
   el.settleQuote.disabled = !account || !walletClient || !contractAddress || !quoteExists || quoteState !== 2;
@@ -563,37 +541,98 @@ function updateActions(): void {
   el.refreshQuote.disabled = !contractAddress;
 }
 
-function selectInvoice(id: string): void {
-  selectedId = id;
-  if (selectedId) {
-    const url = new URL(window.location.href);
-    url.searchParams.set("invoice", selectedId);
-    window.history.replaceState(null, "", url);
-  }
+function renderInvoiceState(): void {
   renderRows();
   renderReceipt();
   updateActions();
 }
 
-async function loadInvoices(): Promise<void> {
-  const payload = await requestJson<InvoiceListResponse>("/api/arcinvoice/invoices");
-  invoices = payload.invoices;
+function rememberInvoice(invoice: Invoice): void {
+  invoices = [invoice, ...invoices.filter(item => item.id !== invoice.id)];
+  saveBrowserInvoice(localStorage, invoice);
+}
 
+async function readInvoice(invoice: Pick<Invoice, "contractAddress" | "chainInvoiceId">) {
+  if (!invoice.contractAddress) throw new Error("Invoice has no registered contract.");
+  return publicClient.readContract({
+    address: invoice.contractAddress, abi: invoiceReadAbi, functionName: "getInvoice", args: [invoice.chainInvoiceId],
+  });
+}
+
+async function syncInvoice(invoice: Invoice): Promise<Invoice> {
+  verifiedInvoices.delete(invoice.id);
+  const updated = reconcileInvoice(invoice, await readInvoice(invoice));
+  rememberInvoice(updated);
+  verifiedInvoices.add(updated.id);
+  return updated;
+}
+
+async function refreshSelectedInvoice(): Promise<void> {
+  const invoice = selectedInvoice();
+  const version = ++selectionVersion;
+  el.verification.textContent = invoice?.contractAddress ? "Checking Arc Testnet..." : "Browser-only draft. Not registered on-chain.";
+  if (!invoice?.contractAddress) return;
+  verifiedInvoices.delete(invoice.id);
+  updateActions();
+  try {
+    const updated = await syncInvoice(invoice);
+    if (version !== selectionVersion) return;
+    el.verification.textContent = updated.status === "draft" ? "Not registered on Arc Testnet." : "Status, merchant and amount verified on Arc Testnet.";
+  } catch (error) {
+    if (version !== selectionVersion) return;
+    el.verification.textContent = "On-chain status unavailable. Payment and sharing disabled.";
+    setStatus(errorMessage(error));
+  } finally {
+    if (version === selectionVersion) renderInvoiceState();
+  }
+}
+
+function selectInvoice(id: string): void {
+  if (invoiceBusy) return;
+  selectedId = id;
+  if (selectedId) {
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.searchParams.set("invoice", selectedId);
+    window.history.replaceState(null, "", url);
+  }
+  renderInvoiceState();
+  void refreshSelectedInvoice();
+}
+
+async function loadInvoices(): Promise<void> {
+  invoices = readBrowserInvoices(localStorage);
+  verifiedInvoices.clear();
+  const reference = sharedInvoiceReference(window.location.href);
+  if (reference) {
+    setStatus("Reading shared invoice from Arc Testnet...");
+    const chain = await readInvoice(reference);
+    const existing = invoices.find(item => item.chainInvoiceId.toLowerCase() === reference.chainInvoiceId.toLowerCase() &&
+      item.contractAddress?.toLowerCase() === reference.contractAddress);
+    const imported = existing ? reconcileInvoice(existing, chain) : importChainInvoice(reference, chain);
+    rememberInvoice(imported);
+    selectedId = imported.id;
+  }
   const requested = new URLSearchParams(window.location.search).get("invoice") ?? "";
+  if (!reference && requested && !invoices.some(invoice => invoice.id === requested)) {
+    selectedId = "";
+    renderInvoiceState();
+    throw new Error("This draft is not saved in this browser. Legacy local-server links are not public on-chain links.");
+  }
   if (!selectedId && requested && invoices.some((invoice) => invoice.id === requested)) {
     selectedId = requested;
   }
-  if (!selectedId && invoices.length > 0) {
-    selectedId = invoices[0].id;
+  if (!invoices.some(invoice => invoice.id === selectedId)) {
+    selectedId = invoices[0]?.id ?? "";
   }
-
-  renderRows();
-  renderReceipt();
-  updateActions();
+  renderInvoiceState();
+  setStatus(invoices.length ? "Browser history loaded. Cached statuses are checked when selected." : "No invoices saved in this browser.");
+  await refreshSelectedInvoice();
 }
 
 async function createInvoice(event: SubmitEvent): Promise<void> {
   event.preventDefault();
+  if (invoiceBusy) return;
 
   const merchantWallet = el.merchantWallet.value.trim();
   if (!isAddress(merchantWallet)) {
@@ -603,9 +642,7 @@ async function createInvoice(event: SubmitEvent): Promise<void> {
 
   try {
     setStatus("Creating invoice...");
-    const invoice = await requestJson<Invoice>("/api/arcinvoice/invoices", {
-      method: "POST",
-      body: JSON.stringify({
+    const invoice = createInvoiceDraft({
         merchantName: el.merchantName.value.trim(),
         merchantWallet,
         customerName: el.customerName.value.trim(),
@@ -613,11 +650,10 @@ async function createInvoice(event: SubmitEvent): Promise<void> {
         amount: el.amount.value.trim(),
         description: el.description.value.trim(),
         dueDate: el.dueDate.value,
-      }),
     });
-    invoices = [invoice, ...invoices.filter((item) => item.id !== invoice.id)];
+    rememberInvoice(invoice);
     selectInvoice(invoice.id);
-    setStatus(`Invoice ${invoice.id} created.`);
+    setStatus(`Invoice ${invoice.id} saved in this browser only.`);
   } catch (error) {
     setStatus(errorMessage(error));
   }
@@ -654,7 +690,6 @@ async function deployContract(): Promise<void> {
     }
     contractAddress = receipt.contractAddress;
     el.contractAddress.value = contractAddress;
-    localStorage.setItem("arcinvoice.contractAddress", contractAddress);
     updateActions();
     setStatus(`Contract deployed at ${contractAddress}.`);
   } catch (error) {
@@ -666,114 +701,125 @@ async function deployContract(): Promise<void> {
 
 async function registerInvoice(): Promise<void> {
   const invoice = selectedInvoice();
-  if (!invoice || !walletClient || !account || !contractAddress) return;
+  if (invoiceBusy || !invoice || !walletClient || !account || !contractAddress) return;
+  const target = invoice.contractAddress ?? contractAddress;
+  let submittedHash: Hash | undefined;
 
   try {
+    invoiceBusy = true;
+    updateActions();
+    if (invoice.status !== "draft") throw new Error("Only a draft can be registered.");
     if (invoice.merchantWallet.toLowerCase() !== account.toLowerCase()) {
       throw new Error("Connect the merchant wallet listed on this invoice before registering it on Arc.");
     }
-    await ensureArc();
-    el.registerInvoice.disabled = true;
+    await assertInvoiceWallet();
+    const current = { ...invoice, contractAddress: target };
+    const chain = await readInvoice(current);
+    if (chain.status !== 0) {
+      rememberInvoice(reconcileInvoice(current, chain));
+      throw new Error("Invoice already exists on Arc. State refreshed; no duplicate transaction submitted.");
+    }
+    rememberInvoice(current);
     setStatus("Registering invoice on Arc...");
-    const metadataURI = `${window.location.origin}/api/arcinvoice/invoices/${invoice.id}`;
+    const metadataURI = `urn:arcinvoice:${invoice.chainInvoiceId}`;
     const hash = await walletClient.writeContract({
-      address: contractAddress,
+      address: target,
       abi: arcInvoiceAbi,
       functionName: "createInvoice",
       args: [invoice.chainInvoiceId, parseEther(invoice.totalDue), metadataURI],
       account,
       chain: arcTestnet,
     });
-    await publicClient.waitForTransactionReceipt({ hash });
-    const updated = await requestJson<Invoice>(`/api/arcinvoice/invoices/${invoice.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        status: "registered",
-        contractAddress,
-        registrationTxHash: hash,
-      }),
-    });
-    invoices = invoices.map((item) => (item.id === updated.id ? updated : item));
-    selectInvoice(updated.id);
+    submittedHash = hash;
+    const pending = { ...current, registrationTxHash: hash };
+    rememberInvoice(pending);
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    if (receipt.status !== "success") throw new Error("Registration reverted on-chain.");
+    await syncInvoice(pending);
     setStatus(`Invoice registered: ${hash}`);
   } catch (error) {
-    setStatus(errorMessage(error));
+    setStatus(`${errorMessage(error)}${submittedHash ? ` Transaction: ${submittedHash}. Refresh state before retrying.` : ""}`);
   } finally {
-    updateActions();
+    invoiceBusy = false;
+    renderInvoiceState();
+    await refreshSelectedInvoice();
   }
 }
 
 async function payInvoice(): Promise<void> {
   const invoice = selectedInvoice();
-  if (!invoice || !walletClient || !account || !contractAddress) return;
+  if (invoiceBusy || !invoice || !walletClient || !account || !invoice.contractAddress) return;
+  let submittedHash: Hash | undefined;
 
   try {
-    await ensureArc();
-    el.payInvoice.disabled = true;
+    invoiceBusy = true;
+    updateActions();
+    await assertInvoiceWallet();
+    const current = await syncInvoice(invoice);
+    if (current.status !== "registered") throw new Error("Invoice is no longer payable.");
     setStatus("Submitting USDC payment...");
     const hash = await walletClient.writeContract({
-      address: contractAddress,
+      address: invoice.contractAddress,
       abi: arcInvoiceAbi,
       functionName: "payInvoice",
       args: [invoice.chainInvoiceId],
-      value: parseEther(invoice.totalDue),
+      value: parseEther(current.totalDue),
       account,
       chain: arcTestnet,
     });
-    await publicClient.waitForTransactionReceipt({ hash });
-    const updated = await requestJson<Invoice>(`/api/arcinvoice/invoices/${invoice.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        status: "paid",
-        paymentTxHash: hash,
-        payer: account,
-      }),
-    });
-    invoices = invoices.map((item) => (item.id === updated.id ? updated : item));
-    selectInvoice(updated.id);
+    submittedHash = hash;
+    const pending = { ...current, paymentTxHash: hash };
+    rememberInvoice(pending);
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    if (receipt.status !== "success") throw new Error("Payment reverted on-chain.");
+    await syncInvoice(pending);
     await refreshBalance();
     setStatus(`Payment confirmed: ${hash}`);
   } catch (error) {
-    setStatus(errorMessage(error));
+    setStatus(`${errorMessage(error)}${submittedHash ? ` Transaction: ${submittedHash}. Refresh state before retrying.` : ""}`);
   } finally {
-    updateActions();
+    invoiceBusy = false;
+    renderInvoiceState();
+    await refreshSelectedInvoice();
   }
 }
 
 async function cancelInvoice(): Promise<void> {
   const invoice = selectedInvoice();
-  if (!invoice || !walletClient || !account || !contractAddress) return;
+  if (invoiceBusy || !invoice || !walletClient || !account || !invoice.contractAddress) return;
+  let submittedHash: Hash | undefined;
 
   try {
+    invoiceBusy = true;
+    updateActions();
     if (invoice.merchantWallet.toLowerCase() !== account.toLowerCase()) {
       throw new Error("Connect the merchant wallet listed on this invoice before cancelling it.");
     }
-    await ensureArc();
-    el.cancelInvoice.disabled = true;
+    await assertInvoiceWallet();
+    const current = await syncInvoice(invoice);
+    if (current.status !== "registered") throw new Error("Invoice is no longer cancellable.");
     setStatus("Cancelling invoice on Arc...");
     const hash = await walletClient.writeContract({
-      address: contractAddress,
+      address: invoice.contractAddress,
       abi: arcInvoiceAbi,
       functionName: "cancelInvoice",
       args: [invoice.chainInvoiceId],
       account,
       chain: arcTestnet,
     });
-    await publicClient.waitForTransactionReceipt({ hash });
-    const updated = await requestJson<Invoice>(`/api/arcinvoice/invoices/${invoice.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        status: "cancelled",
-        cancellationTxHash: hash,
-      }),
-    });
-    invoices = invoices.map((item) => (item.id === updated.id ? updated : item));
-    selectInvoice(updated.id);
+    submittedHash = hash;
+    const pending = { ...current, cancellationTxHash: hash };
+    rememberInvoice(pending);
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    if (receipt.status !== "success") throw new Error("Cancellation reverted on-chain.");
+    await syncInvoice(pending);
     setStatus(`Invoice cancelled: ${hash}`);
   } catch (error) {
-    setStatus(errorMessage(error));
+    setStatus(`${errorMessage(error)}${submittedHash ? ` Transaction: ${submittedHash}. Refresh state before retrying.` : ""}`);
   } finally {
-    updateActions();
+    invoiceBusy = false;
+    renderInvoiceState();
+    await refreshSelectedInvoice();
   }
 }
 
@@ -916,11 +962,11 @@ async function cancelQuote(): Promise<void> {
 
 async function copyInvoiceLink(): Promise<void> {
   const invoice = selectedInvoice();
-  if (!invoice) return;
-  const url = new URL(window.location.href);
-  url.searchParams.set("invoice", invoice.id);
-  await navigator.clipboard.writeText(url.toString());
-  setStatus("Invoice link copied.");
+  if (!invoice || invoice.status === "draft" || !verifiedInvoices.has(invoice.id)) return;
+  try {
+    await navigator.clipboard.writeText(invoiceShareUrl(window.location.href, invoice).toString());
+    setStatus("On-chain invoice link copied. Customer details and browser notes are not included.");
+  } catch (error) { setStatus(errorMessage(error)); }
 }
 
 function saveContract(): void {
@@ -930,14 +976,13 @@ function saveContract(): void {
     return;
   }
   contractAddress = value as Address;
-  localStorage.setItem("arcinvoice.contractAddress", contractAddress);
   updateActions();
   setStatus("Contract loaded.");
 }
 
 el.connect.addEventListener("click", () => void connect());
 el.invoiceForm.addEventListener("submit", (event) => void createInvoice(event));
-el.refreshInvoices.addEventListener("click", () => void loadInvoices());
+el.refreshInvoices.addEventListener("click", () => void loadInvoices().catch(error => setStatus(errorMessage(error))));
 el.deployContract.addEventListener("click", () => void deployContract());
 el.saveContract.addEventListener("click", saveContract);
 el.registerInvoice.addEventListener("click", () => void registerInvoice());
