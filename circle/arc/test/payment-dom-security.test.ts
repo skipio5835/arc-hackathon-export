@@ -156,7 +156,13 @@ test("CCTP receipts preserve incremental state and destination-specific transact
 
 test("standalone token transfer errors reject off-site and executable explorer links", () => {
   const html = readFileSync(new URL("../public/skipio-transfer.html", import.meta.url), "utf8");
-  const source = ts.createSourceFile("inline.js", [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join("\n"), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  // Extract this repository's single, known module script; this is not an HTML sanitizer.
+  const moduleTag = '<script type="module">';
+  const opening = html.indexOf(moduleTag);
+  const closing = html.indexOf("</script>", opening + moduleTag.length);
+  assert.ok(opening >= 0 && closing > opening);
+  assert.equal(html.indexOf(moduleTag, opening + moduleTag.length), -1);
+  const source = ts.createSourceFile("inline.js", html.slice(opening + moduleTag.length, closing), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const fn = source.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === "setStatus")!;
   const status = new DomNode("p");
   for (const link of ["javascript:alert(1)", `https://evil.example/tx/${hash}`, `https://testnet.arcscan.app.evil.example/tx/${hash}`, `https://testnet.arcscan.app/tx/${payload}`, `https://testnet.arcscan.app/tx/${hash}?evil=1`]) {
