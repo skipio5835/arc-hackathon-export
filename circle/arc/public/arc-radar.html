@@ -3,11 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="ARCROW provides live Arc meme-market prices, liquidity, trading flow, holder concentration, and exit risk." />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="description" content="ARCROW is an independent Arc Testnet market watch tool. Selected indexed pools, evidence-linked changes, and explicit data coverage. No wallet connection or safety guarantee." />
     <title>ARCROW | Arc Meme Intelligence</title>
     <link rel="icon" type="image/png" href="./assets/arcrow-mark.png" />
-    <link rel="preconnect" href="https://testnet.arcscan.app" />
+    <script src="./arc-radar-theme.js"></script>
     <link rel="stylesheet" href="./arc-radar.css" />
+    <link rel="stylesheet" href="./arc-radar-theme.css" />
   </head>
   <body>
     <header class="app-header">
@@ -24,75 +27,141 @@
           </a>
         </div>
         <form class="search-form" id="searchForm" role="search">
-          <label class="sr-only" for="searchInput">Search token or contract</label>
-          <input id="searchInput" type="search" autocomplete="off" placeholder="Search token, symbol, or contract" />
-          <button type="submit">Search</button>
+          <label class="sr-only" for="searchInput" data-i18n="Search token or contract">Search token or contract</label>
+          <input id="searchInput" type="search" autocomplete="off" placeholder="Search token, symbol, or contract" data-i18n-placeholder="Search token, symbol, or contract" />
+          <button type="submit" data-i18n="Search">Search</button>
         </form>
-        <button class="refresh-button" id="refreshButton" type="button">Refresh</button>
+        <div class="header-actions">
+          <fieldset class="theme-picker">
+            <legend class="sr-only" data-i18n="Color theme">Color theme</legend>
+            <label><input class="sr-only" type="radio" name="arcrow-theme" value="light" disabled /><span data-i18n="Light">Light</span></label>
+            <label><input class="sr-only" type="radio" name="arcrow-theme" value="dark" disabled /><span data-i18n="Dark">Dark</span></label>
+            <label><input class="sr-only" type="radio" name="arcrow-theme" value="system" checked disabled /><span data-i18n="System">System</span></label>
+          </fieldset>
+          <label class="language-picker"><span class="sr-only" data-i18n="Language">Language</span><select id="languageSelect" disabled><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option></select></label>
+          <button class="refresh-button" id="refreshButton" type="button" data-i18n="Refresh">Refresh</button>
+        </div>
       </div>
       <div class="shell status-row">
         <span class="live-dot" aria-hidden="true"></span>
         <strong>ARC TESTNET MARKET FEED</strong>
         <span class="chain-id">CHAIN 5042002</span>
-        <span id="lastUpdated">Connecting...</span>
+        <span id="lastUpdated" data-i18n="Connecting...">Connecting...</span>
         <span class="independent-label">INDEPENDENT ANALYTICS</span>
-        <a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer">ArcScan</a>
+        <a data-explorer href="https://testnet.arcscan.app" target="_blank" rel="noreferrer">ArcScan</a>
       </div>
     </header>
 
     <div class="notice hidden" id="dataNotice" role="status" aria-live="polite"></div>
 
     <main class="shell trader-layout" id="markets">
+      <nav class="pool-page-nav hidden" id="poolPageNav" aria-label="Market navigation">
+        <a id="backToMarkets" href="./arc-radar.html" data-i18n="Back to markets">Back to markets</a><span id="poolPageAddress"></span>
+      </nav>
+      <details class="market-coverage">
+        <summary id="coverageSummary">Arc Testnet · Selected pools only</summary>
+        <p id="coverageStatus" data-i18n="Reading source coverage...">Reading source coverage...</p>
+        <div id="coverageSources"></div>
+        <p data-i18n="Source: ArcScan. Indexing may lag. V2 pools only; mainnet and other DEX protocols are not connected.">Source: ArcScan. Indexing may lag. V2 pools only; mainnet and other DEX protocols are not connected.</p>
+      </details>
+
+      <section class="market-brief" aria-labelledby="marketBriefTitle">
+        <div class="section-title"><div><p class="eyebrow">ARCROW / LAST 24H</p><h2 id="marketBriefTitle" data-i18n="Changes to review">Changes to review</h2></div><span id="marketBriefCount">--</span></div>
+        <div id="marketBriefList"><p class="brief-empty" data-i18n="Reading indexed changes...">Reading indexed changes...</p></div>
+        <details class="brief-rules"><summary data-i18n="Selection criteria">Selection criteria</summary><p data-i18n="Loaded pools only. Latest liquidity removal of at least 10% of prior USDC reserve, then 1H price moves of at least 30%, then newly created pools with indexed trades. One item per token, up to six. Cached markets are excluded. These are screening rules, not recommendations.">Loaded pools only. Latest liquidity removal of at least 10% of prior USDC reserve, then 1H price moves of at least 30%, then newly created pools with indexed trades. One item per token, up to six. Cached markets are excluded. These are screening rules, not recommendations.</p></details>
+      </section>
       <section class="market-pulse" aria-labelledby="marketPulseTitle">
         <header class="pulse-heading">
           <img class="pulse-watermark" src="./assets/arcrow-mark.png" alt="" aria-hidden="true" />
-          <div><p class="eyebrow">ARCROW / ARC TESTNET</p><h2 id="marketPulseTitle">Live meme market</h2></div>
-          <p id="pulseStatus">Reading the last 24 hours...</p>
+          <div><p class="eyebrow">ARCROW / ARC TESTNET</p><h2 id="marketPulseTitle" data-i18n="Loaded pool activity">Loaded pool activity</h2></div>
+          <p id="pulseStatus" data-i18n="Reading the last 24 hours...">Reading the last 24 hours...</p>
         </header>
         <div class="pulse-metrics">
-          <div><span>24H volume</span><strong id="pulseVolume">--</strong><small>USDC pool flow</small></div>
-          <div><span>24H buys / sells</span><strong id="pulseTrades">--</strong><small>indexed swaps</small></div>
-          <div><span>Net flow</span><strong id="pulseNetFlow">--</strong><small>buy minus sell</small></div>
-          <div><span>Newest pool</span><strong id="pulseNewest">--</strong><small id="pulseNewestAge">--</small></div>
-          <div><span>Sell observed</span><strong id="pulseSellVerified">--</strong><small>markets with an indexed sell</small></div>
+          <div><span data-i18n="24H volume">24H volume</span><strong id="pulseVolume">--</strong><small data-i18n="USDC pool flow">USDC pool flow</small></div>
+          <div><span data-i18n="24H buys / sells">24H buys / sells</span><strong id="pulseTrades">--</strong><small data-i18n="indexed swaps">indexed swaps</small></div>
+          <div><span data-i18n="Net flow">Net flow</span><strong id="pulseNetFlow">--</strong><small data-i18n="buy minus sell">buy minus sell</small></div>
+          <div><span data-i18n="Newest pool">Newest pool</span><strong id="pulseNewest">--</strong><small id="pulseNewestAge">--</small></div>
+          <div><span data-i18n="Sell observed">Sell observed</span><strong id="pulseSellVerified">--</strong><small data-i18n="markets with an indexed sell">markets with an indexed sell</small></div>
         </div>
       </section>
 
-      <section class="market-board">
+      <section class="watch-digest hidden" id="watchDigest" aria-labelledby="watchDigestTitle">
+        <div class="watch-digest-heading">
+          <h2 id="watchDigestTitle" data-i18n="Watchlist changes">Watchlist changes</h2>
+          <div class="watch-digest-controls"><label class="sr-only" for="watchChangeView" data-i18n="Watchlist change view">Watchlist change view</label><select id="watchChangeView"><option value="new" data-i18n="Since review">Since review</option><option value="all" data-i18n="Recent history">Recent history</option></select><button id="markWatchReviewed" type="button" disabled data-i18n="Mark all reviewed">Mark all reviewed</button></div>
+        </div>
+        <p id="watchDigestCoverage"></p>
+        <div id="watchDigestList"></div>
+        <p id="watchMonitorNote"></p>
+      </section>
+
+      <aside class="ad-preview" data-ad-preview aria-label="Advertisement preview" hidden>
+        <span>Advertisements</span>
+        <div class="ad-preview-creative"><strong>Preview</strong></div>
+      </aside>
+
+      <section class="market-board" id="marketList" tabindex="-1">
         <header class="board-header">
           <div>
             <p class="eyebrow">ARCROW DISCOVERY</p>
-            <h1>Arc meme markets</h1>
-            <p id="marketSummary">Loading live pools...</p>
+            <h1 data-i18n="Arc meme markets">Arc meme markets</h1>
+            <p id="marketSummary" data-i18n="Loading indexed pools...">Loading indexed pools...</p>
           </div>
-          <div class="market-filters" role="group" aria-label="Filter token markets">
-            <button class="filter-button active" type="button" data-market-filter="all" aria-pressed="true">All</button>
-            <button class="filter-button" type="button" data-market-filter="watchlist" aria-pressed="false">Watchlist</button>
-            <button class="filter-button" type="button" data-market-filter="active" aria-pressed="false">Moving 24H</button>
-            <button class="filter-button" type="button" data-market-filter="new" aria-pressed="false">New</button>
-            <button class="filter-button" type="button" data-market-filter="sells" aria-pressed="false">Sell seen</button>
-            <button class="filter-button" type="button" data-market-filter="risky" aria-pressed="false">Risky</button>
+          <div class="market-filters" role="group" aria-label="Filter token markets" data-i18n-aria-label="Filter token markets">
+            <button class="filter-button active" type="button" data-market-filter="all" aria-pressed="true" data-i18n="All">All</button>
+            <button class="filter-button" type="button" data-market-filter="watchlist" aria-pressed="false" data-i18n="Watchlist">Watchlist</button>
+            <button class="filter-button" type="button" data-market-filter="active" aria-pressed="false" data-i18n="Moving 24H">Moving 24H</button>
+            <button class="filter-button" type="button" data-market-filter="new" aria-pressed="false" data-i18n="New">New</button>
+            <button class="filter-button" type="button" data-market-filter="sells" aria-pressed="false" data-i18n="Sell seen">Sell seen</button>
+            <button class="filter-button" type="button" data-market-filter="risky" aria-pressed="false" title="No indexed sell, or quote-side reserve below 10 USDC. Sorted by quote reserve, not a safety rating." data-i18n-title="No indexed sell, or quote-side reserve below 10 USDC. Sorted by quote reserve, not a safety rating." data-i18n="Needs review">Needs review</button>
           </div>
         </header>
 
+        <div class="discovery-toolbar">
+          <label><span data-i18n="Sort by">Sort by</span>
+            <select id="marketSort">
+              <option value="default" data-i18n="View default">View default</option>
+              <option value="newest" data-i18n="Newest pool">Newest pool</option>
+              <option value="volume" data-i18n="24H volume">24H volume</option>
+              <option value="liquidity" data-i18n="Liquidity">Liquidity</option>
+              <option value="recent" data-i18n="Latest trade">Latest trade</option>
+            </select>
+          </label>
+          <label><span data-i18n="Min. liquidity (USDC)">Min. liquidity (USDC)</span>
+            <select id="minimumLiquidity">
+              <option value="0" data-i18n="Any">Any</option>
+              <option value="1">1</option>
+              <option value="10">10</option>
+              <option value="100">100</option>
+              <option value="1000">1,000</option>
+            </select>
+          </label>
+          <label class="discovery-check"><input id="traded24h" type="checkbox" /><span data-i18n="Traded in 24H">Traded in 24H</span></label>
+          <label class="discovery-check"><input id="sellSeenOnly" type="checkbox" /><span data-i18n="Sell observed">Sell observed</span></label>
+        </div>
         <div class="market-column-head" aria-hidden="true">
-          <span>Token</span><span>Price</span><span>Market pulse</span><span>Liquidity</span><span>Buys / Sells</span><span>Age</span>
+          <span data-i18n="Token">Token</span><span data-i18n="Price">Price</span><span data-i18n="Market pulse">Market pulse</span><span data-i18n="Liquidity">Liquidity</span><span data-i18n="Buys / Sells">Buys / Sells</span><span data-i18n="Age">Age</span>
         </div>
         <div class="market-rows" id="marketRows" aria-live="polite">
-          <div class="market-loading-row">Reading pools and recent trades...</div>
+          <div class="market-loading-row" data-i18n="Reading pools and recent trades...">Reading pools and recent trades...</div>
+        </div>
+        <div class="discovery-footer">
+          <p id="discoveryCoverage" aria-live="polite">Loading market coverage...</p>
+          <button id="loadMoreMarkets" type="button" disabled data-i18n="Loading pools...">Loading pools...</button>
         </div>
       </section>
 
       <aside class="token-panel" aria-live="polite">
         <div class="detail-empty" id="marketDetailEmpty">
           <span class="empty-pulse" aria-hidden="true"></span>
-          <div><strong>Select a token</strong><p>Price, flow, ownership, and exit risk will appear here.</p></div>
+          <div><strong data-i18n="Select a token">Select a token</strong><p data-i18n="Price, flow, ownership, and exit risk will appear here.">Price, flow, ownership, and exit risk will appear here.</p></div>
         </div>
         <div class="detail-loading hidden" id="marketDetailLoading">
           <span class="loader" aria-hidden="true"></span>
-          <div><strong>Checking the token</strong><p>Reading holders, liquidity, and trading controls.</p></div>
+          <div><strong data-i18n="Checking the token">Checking the token</strong><p data-i18n="Reading holders, liquidity, and trading controls.">Reading holders, liquidity, and trading controls.</p></div>
         </div>
         <div class="detail-content hidden" id="marketDetailContent">
+          <a class="mobile-market-back" href="#marketList" data-i18n="Back to markets">Back to markets</a>
           <header class="token-header">
             <div class="token-identity">
               <span class="token-mark" id="marketTokenMark" aria-hidden="true">?</span>
@@ -107,22 +176,36 @@
             </div>
           </header>
 
+          <div class="market-share">
+            <a id="fullMarketLink" href="./arc-radar.html" data-i18n="Full details">Full details</a>
+            <button id="copyMarketLink" type="button" disabled data-i18n="Copy link">Copy link</button>
+            <span id="shareMarketStatus" role="status"></span>
+          </div>
           <section class="key-metrics" aria-label="Selected token market metrics">
-            <div><span>Price</span><strong id="detailPrice">--</strong><small id="detailPriceChange">--</small></div>
-            <div><span>FDV</span><strong id="detailFdv">--</strong><small>fully diluted</small></div>
-            <div><span>Liquidity</span><strong id="detailLiquidity">--</strong><small id="detailLiquidityNote">--</small></div>
-            <div><span>Holders</span><strong id="detailHolders">--</strong><small>indexed addresses</small></div>
+            <div><span data-i18n="Price">Price</span><strong id="detailPrice">--</strong><small id="detailPriceChange">--</small></div>
+            <div><span>FDV</span><strong id="detailFdv">--</strong><small data-i18n="fully diluted">fully diluted</small></div>
+            <div><span data-i18n="Liquidity">Liquidity</span><strong id="detailLiquidity">--</strong><small id="detailLiquidityNote">--</small></div>
+            <div><span data-i18n="Holders">Holders</span><strong id="detailHolders">--</strong><small data-i18n="indexed addresses">indexed addresses</small></div>
           </section>
 
           <section class="alert-section hidden" id="observedAlertSection">
-            <div class="section-title"><div><p class="eyebrow">Watchlist</p><h3>Observed changes</h3></div><strong id="observedAlertCount">--</strong></div>
+            <div class="section-title"><div><p class="eyebrow" data-i18n="Watchlist">Watchlist</p><h3 data-i18n="Observed changes">Observed changes</h3></div><strong id="observedAlertCount">--</strong></div>
             <div class="observed-alert-list" id="observedAlertList"></div>
-            <p class="observed-alert-note" id="observedAlertNote">Stored in this browser.</p>
+            <p class="observed-alert-note" id="observedAlertNote" data-i18n="Stored in this browser.">Stored in this browser.</p>
+          </section>
+
+          <section class="pool-comparison" aria-labelledby="poolComparisonTitle">
+            <div class="section-title"><h3 id="poolComparisonTitle" data-i18n="Pool comparison">Pool comparison</h3></div>
+            <label for="poolSelector" data-i18n="Selected pool">Selected pool</label>
+            <select id="poolSelector" disabled></select>
+            <p id="poolComparisonNote"></p>
+            <div class="pool-comparison-head" aria-hidden="true"><span data-i18n="Pool">Pool</span><span data-i18n="Price (USDC)">Price (USDC)</span><span data-i18n="Liquidity">Liquidity</span><span data-i18n="Data">Data</span></div>
+            <div id="poolComparisonList"></div>
           </section>
 
           <section class="price-section">
             <div class="section-title">
-              <div><p class="eyebrow">Pool price</p><h3>Indexed price path</h3></div>
+              <div><p class="eyebrow" data-i18n="Pool price">Pool price</p><h3 data-i18n="Indexed price path">Indexed price path</h3></div>
               <strong id="priceChange">--</strong>
             </div>
             <div class="window-metrics" aria-label="Price and trading windows">
@@ -136,97 +219,115 @@
           </section>
 
           <section class="flow-section">
-            <div class="section-title"><div><p class="eyebrow">Last 24 hours</p><h3>Recent market flow</h3></div></div>
+            <div class="section-title"><div><p class="eyebrow" data-i18n="Last 24 hours">Last 24 hours</p><h3 data-i18n="Recent market flow">Recent market flow</h3></div></div>
             <div class="flow-metrics">
-              <div><span>Buys</span><strong class="positive" id="detailBuys">--</strong></div>
-              <div><span>Sells</span><strong class="negative" id="detailSells">--</strong></div>
-              <div><span>Volume</span><strong id="detailVolume">--</strong></div>
-              <div><span>Last trade</span><strong id="detailLastTrade">--</strong></div>
+              <div><span data-i18n="Buys">Buys</span><strong class="positive" id="detailBuys">--</strong></div>
+              <div><span data-i18n="Sells">Sells</span><strong class="negative" id="detailSells">--</strong></div>
+              <div><span data-i18n="Volume">Volume</span><strong id="detailVolume">--</strong></div>
+              <div><span data-i18n="Last trade">Last trade</span><strong id="detailLastTrade">--</strong></div>
             </div>
             <div class="detail-flow-track" aria-hidden="true"><span id="detailBuyBar"></span><span id="detailSellBar"></span></div>
           </section>
 
           <section class="trade-section">
-            <div class="section-title"><div><p class="eyebrow">Visible transactions</p><h3>Recent trade tape</h3></div><strong id="detailTradeCount">--</strong></div>
+            <div class="section-title"><div><p class="eyebrow" data-i18n="Visible transactions">Visible transactions</p><h3 data-i18n="Recent trade tape">Recent trade tape</h3></div><strong id="detailTradeCount">--</strong></div>
             <div class="trade-list" id="tradeList"></div>
           </section>
 
           <section class="wallet-section">
-            <div class="section-title"><div><p class="eyebrow">Wallet intelligence</p><h3>Wallet signals</h3></div><strong id="walletSignalCount">--</strong></div>
+            <div class="section-title"><div><p class="eyebrow" data-i18n="Wallet intelligence">Wallet intelligence</p><h3 data-i18n="Wallet signals">Wallet signals</h3></div><strong id="walletSignalCount">--</strong></div>
             <div class="wallet-signal-metrics" aria-label="Wallet signal summary">
-              <div><span>Pool creator</span><strong id="walletCreatorMoves">--</strong><small>moves</small></div>
-              <div><span>Whales</span><strong id="walletWhaleMoves">--</strong><small>top / large</small></div>
-              <div><span>Entries</span><strong id="walletEntries">--</strong><small>first seen</small></div>
-              <div><span>Full exits</span><strong id="walletExits">--</strong><small>zero balance</small></div>
+              <div><span data-i18n="Creation sender">Creation sender</span><strong id="walletCreatorMoves">--</strong><small data-i18n="moves">moves</small></div>
+              <div><span data-i18n="Whales">Whales</span><strong id="walletWhaleMoves">--</strong><small data-i18n="top / large">top / large</small></div>
+              <div><span data-i18n="Receipts">Receipts</span><strong id="walletEntries">--</strong><small data-i18n="first visible">first visible</small></div>
+              <div><span data-i18n="To pool">To pool</span><strong id="walletExits">--</strong><small data-i18n="transfers">transfers</small></div>
             </div>
-            <div class="wallet-filters" role="group" aria-label="Filter wallet signals">
-              <button class="wallet-filter active" type="button" data-wallet-filter="all" aria-pressed="true">All</button>
-              <button class="wallet-filter" type="button" data-wallet-filter="creator" aria-pressed="false">Pool creator</button>
-              <button class="wallet-filter" type="button" data-wallet-filter="whale" aria-pressed="false">Whales</button>
-              <button class="wallet-filter" type="button" data-wallet-filter="entry" aria-pressed="false">Entries</button>
-              <button class="wallet-filter" type="button" data-wallet-filter="exit" aria-pressed="false">Exits</button>
+            <div class="wallet-filters" role="group" aria-label="Filter wallet signals" data-i18n-aria-label="Filter wallet signals">
+              <button class="wallet-filter active" type="button" data-wallet-filter="all" aria-pressed="true" data-i18n="All">All</button>
+              <button class="wallet-filter" type="button" data-wallet-filter="creator" aria-pressed="false" data-i18n="Creation sender">Creation sender</button>
+              <button class="wallet-filter" type="button" data-wallet-filter="whale" aria-pressed="false" data-i18n="Whales">Whales</button>
+              <button class="wallet-filter" type="button" data-wallet-filter="entry" aria-pressed="false" data-i18n="Receipts">Receipts</button>
+              <button class="wallet-filter" type="button" data-wallet-filter="exit" aria-pressed="false" data-i18n="To pool">To pool</button>
             </div>
             <div class="wallet-signal-list" id="walletSignalList"></div>
             <p class="wallet-signal-note" id="walletSignalNote">Reading indexed transfer coverage...</p>
           </section>
 
           <section class="liquidity-section">
-            <div class="section-title"><div><p class="eyebrow">Pool safety</p><h3>Liquidity monitor</h3></div><strong id="liquidityEventCount">--</strong></div>
+            <div class="section-title"><div><p class="eyebrow" data-i18n="Pool safety">Pool safety</p><h3 data-i18n="Liquidity monitor">Liquidity monitor</h3></div><strong id="liquidityEventCount">--</strong></div>
             <div class="liquidity-metrics" aria-label="Liquidity event summary">
-              <div><span>Exit side</span><strong id="liquidityCurrent">--</strong><small>USDC now</small></div>
-              <div><span>24H added</span><strong id="liquidityAdded">--</strong><small>USDC</small></div>
-              <div><span>24H removed</span><strong id="liquidityRemoved">--</strong><small>USDC</small></div>
-              <div><span>LP burned</span><strong id="liquidityBurned">--</strong><small>of LP supply</small></div>
+              <div><span data-i18n="Exit side">Exit side</span><strong id="liquidityCurrent">--</strong><small data-i18n="USDC now">USDC now</small></div>
+              <div><span data-i18n="24H added">24H added</span><strong id="liquidityAdded">--</strong><small>USDC</small></div>
+              <div><span data-i18n="24H removed">24H removed</span><strong id="liquidityRemoved">--</strong><small>USDC</small></div>
+              <div><span data-i18n="LP burned">LP burned</span><strong id="liquidityBurned">--</strong><small data-i18n="of LP supply">of LP supply</small></div>
             </div>
             <p class="liquidity-status" id="liquidityLpStatus">Reading LP ownership...</p>
             <div class="liquidity-event-list" id="liquidityEventList"></div>
-            <p class="liquidity-note">Pool changes are calculated from indexed Mint, Burn, and Sync events.</p>
+            <p class="liquidity-note" id="liquidityHistoryNote" data-i18n="Pool changes are calculated from indexed Mint, Burn, and Sync events.">Pool changes are calculated from indexed Mint, Burn, and Sync events.</p>
           </section>
 
           <section class="holder-section">
-            <div class="section-title"><div><p class="eyebrow">Ownership</p><h3>Holder distribution</h3></div><strong id="holderCountSummary">--</strong></div>
+            <div class="section-title"><div><p class="eyebrow" data-i18n="Ownership">Ownership</p><h3 data-i18n="Holder distribution">Holder distribution</h3></div><strong id="holderCountSummary">--</strong></div>
             <div class="holder-concentration" aria-label="Holder concentration excluding pool and burn addresses">
-              <div><span>Top 1</span><strong id="holderTop1">--</strong><small>of supply</small></div>
-              <div><span>Top 5</span><strong id="holderTop5">--</strong><small>of supply</small></div>
-              <div><span>Top 10</span><strong id="holderTop10">--</strong><small>of supply</small></div>
-              <div><span>Pool creator</span><strong id="holderCreator">--</strong><small>current bag</small></div>
+              <div><span data-i18n="Top 1">Top 1</span><strong id="holderTop1">--</strong><small data-i18n="of supply">of supply</small></div>
+              <div><span data-i18n="Top 5">Top 5</span><strong id="holderTop5">--</strong><small data-i18n="of supply">of supply</small></div>
+              <div><span data-i18n="Top 10">Top 10</span><strong id="holderTop10">--</strong><small data-i18n="of supply">of supply</small></div>
+              <div><span data-i18n="Creation sender">Creation sender</span><strong id="holderCreator">--</strong><small data-i18n="indexed share">indexed share</small></div>
             </div>
             <p class="holder-note" id="holderSupplyNote">Pool -- · Burned -- · rankings exclude both.</p>
             <div class="holder-list" id="holderList"></div>
           </section>
 
           <section class="cluster-section">
-            <div class="section-title"><div><p class="eyebrow">On-chain relationships</p><h3>Holder connections</h3></div><strong id="holderClusterSummary">--</strong></div>
+            <div class="section-title"><div><p class="eyebrow" data-i18n="On-chain relationships">On-chain relationships</p><h3 data-i18n="Holder connections">Holder connections</h3></div><strong id="holderClusterSummary">--</strong></div>
             <div class="cluster-metrics" aria-label="Holder connection summary">
-              <div><span>Connections</span><strong id="clusterConnections">--</strong><small>indexed links</small></div>
-              <div><span>Connected</span><strong id="clusterWallets">--</strong><small>top holders</small></div>
-              <div><span>Clusters</span><strong id="clusterCount">--</strong><small>linked groups</small></div>
-              <div><span>Largest</span><strong id="clusterLargest">--</strong><small>of supply</small></div>
+              <div><span data-i18n="Connections">Connections</span><strong id="clusterConnections">--</strong><small data-i18n="indexed links">indexed links</small></div>
+              <div><span data-i18n="Connected">Connected</span><strong id="clusterWallets">--</strong><small data-i18n="top holders">top holders</small></div>
+              <div><span data-i18n="Clusters">Clusters</span><strong id="clusterCount">--</strong><small data-i18n="linked groups">linked groups</small></div>
+              <div><span data-i18n="Largest">Largest</span><strong id="clusterLargest">--</strong><small data-i18n="of supply">of supply</small></div>
             </div>
             <div class="holder-cluster-map" id="holderClusterMap"></div>
             <div class="holder-connection-list" id="holderConnectionList"></div>
-            <p class="cluster-note">Connections mean an indexed direct transfer or a shared non-contract source. They do not prove common ownership.</p>
+            <p class="cluster-note" data-i18n="Connections mean an indexed direct transfer or a shared non-contract source. They do not prove common ownership.">Connections mean an indexed direct transfer or a shared non-contract source. They do not prove common ownership.</p>
           </section>
 
           <section class="risk-section">
-            <div class="section-title"><div><p class="eyebrow">Risk check</p><h3>What can hurt the trade</h3></div><strong id="warningCount">--</strong></div>
+            <div class="section-title"><div><p class="eyebrow" data-i18n="Evidence, not a safety score">Evidence, not a safety score</p><h3 data-i18n="Token checks">Token checks</h3></div></div>
+            <p id="warningCount" class="evidence-summary">--</p>
+            <p id="evidenceFreshness" class="evidence-summary"></p>
+            <div id="evidenceSources" class="evidence-sources"></div>
             <div class="warning-list" id="marketWarnings"></div>
           </section>
 
+          <section class="authority-section" aria-labelledby="authorityHeading">
+            <div class="section-title"><div><p class="eyebrow" data-i18n="Read-only RPC">Read-only RPC</p><h3 id="authorityHeading" data-i18n="Contract state">Contract state</h3></div><button id="readAuthority" type="button" data-i18n="Read state">Read state</button></div>
+            <p id="authorityStatus" class="evidence-summary" role="status" data-i18n="No state snapshot requested.">No state snapshot requested.</p>
+            <div id="authoritySource" class="authority-source"></div>
+            <div id="authorityRows"></div>
+            <p class="authority-note" data-i18n="Selected getters only. No sell simulation, proxy-storage verification, or complete permission audit. Missing reads do not imply safety.">Selected getters only. No sell simulation, proxy-storage verification, or complete permission audit. Missing reads do not imply safety.</p>
+          </section>
+
           <section class="exit-section">
-            <div class="section-title"><div><p class="eyebrow">Exit pressure</p><h3>Sell-size impact</h3></div><strong id="exitEstimate">--</strong></div>
+            <div class="section-title"><div><p class="eyebrow" data-i18n="Exit pressure">Exit pressure</p><h3 data-i18n="Sell-size impact">Sell-size impact</h3></div><strong id="exitEstimate">--</strong></div>
             <svg id="exitCurve" role="img" aria-label="Estimated price impact when selling a percentage of token supply" viewBox="0 0 440 170" preserveAspectRatio="none"></svg>
-            <div class="exit-axis"><span>0.1% supply</span><span>5% supply</span></div>
-            <p class="chart-note">Pool estimate only. Token taxes or transfer limits may make the actual result worse.</p>
+            <div class="exit-axis"><span data-i18n="0.1% supply">0.1% supply</span><span data-i18n="5% supply">5% supply</span></div>
+            <p class="chart-note" data-i18n="Single-pool v2 estimate with an assumed 0.3% fee. No sell simulation. Token taxes, limits, MEV, and routing are not included.">Single-pool v2 estimate with an assumed 0.3% fee. No sell simulation. Token taxes, limits, MEV, and routing are not included.</p>
           </section>
         </div>
       </aside>
     </main>
 
+    <div class="shell ad-preview-controls" id="adPreviewControls" hidden>
+      <label><input id="adPreviewToggle" type="checkbox" />Ad preview</label>
+      <label>Placement<select id="adPreviewPlacement"><option value="summary">After summary</option><option value="end">Page end</option></select></label>
+      <p id="adPreviewStatus" role="status">Preview only</p>
+      <p>50% visible for 1s: <strong id="adPreviewVisibility">No</strong></p>
+    </div>
+
     <footer>
       <div class="shell footer-inner">
         <div class="footer-brand"><strong>ARCROW</strong><span>ARC MEME INTELLIGENCE</span><small>ON ARC TESTNET</small></div>
-        <p>Independent read-only analytics. Not affiliated with Circle or Arc. No token is endorsed and no safety result is guaranteed.</p>
+        <p data-i18n="Independent read-only analytics. Not affiliated with Circle or Arc. No token is endorsed and no safety result is guaranteed.">Independent read-only analytics. Not affiliated with Circle or Arc. No token is endorsed and no safety result is guaranteed.</p>
       </div>
     </footer>
 

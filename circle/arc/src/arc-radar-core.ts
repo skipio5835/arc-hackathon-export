@@ -1,4 +1,6 @@
 export const ARC_TESTNET_USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
+export type RadarQuoteAsset = { address: string; decimals: number; symbol: "USDC" };
+const legacyQuote: RadarQuoteAsset = { address: ARC_TESTNET_USDC_ADDRESS, decimals: 6, symbol: "USDC" };
 
 export type RadarLogParameter = {
   name?: string;
@@ -14,7 +16,15 @@ export type RadarAddressLog = {
 export type RadarPair = {
   token0: string;
   token1: string;
+  quoteAsset?: RadarQuoteAsset;
 };
+
+function quoteForPair(pair: RadarPair): RadarQuoteAsset | null {
+  const quote = pair.quoteAsset ?? legacyQuote;
+  const is0 = pair.token0.toLowerCase() === quote.address.toLowerCase();
+  const is1 = pair.token1.toLowerCase() === quote.address.toLowerCase();
+  return is0 !== is1 ? quote : null;
+}
 
 export type ReserveSnapshot = {
   timestamp: string;
@@ -34,14 +44,26 @@ export function decimalValue(raw: string | null | undefined, decimals: string | 
   return value / 10 ** places;
 }
 
+export function fullyDilutedValue(price: number, supply: string | null | undefined, decimals: string | null | undefined): number | null {
+  if (!Number.isFinite(price) || price <= 0 || typeof supply !== "string" || !/^\d+$/.test(supply)
+    || typeof decimals !== "string" || !/^\d+$/.test(decimals)) return null;
+  const places = Number(decimals);
+  const raw = Number(supply);
+  if (!Number.isInteger(places) || places < 0 || places > 255 || !Number.isFinite(raw)) return null;
+  const value = price * (raw / 10 ** places);
+  return Number.isFinite(value) ? value : null;
+}
+
 export function syncReserves(log: RadarAddressLog, pair: RadarPair, tokenDecimals: string | null): Omit<ReserveSnapshot, "timestamp"> | null {
+  const quote = quoteForPair(pair);
+  if (!quote) return null;
   if (!log.decoded?.method_call?.startsWith("Sync(")) return null;
   const reserve0 = logParameter(log, "reserve0");
   const reserve1 = logParameter(log, "reserve1");
   if (!reserve0 || !reserve1) return null;
-  const tokenIs0 = pair.token0.toLowerCase() !== ARC_TESTNET_USDC_ADDRESS;
+  const tokenIs0 = pair.token0.toLowerCase() !== quote.address.toLowerCase();
   const tokenReserve = decimalValue(tokenIs0 ? reserve0 : reserve1, tokenDecimals);
-  const usdcReserve = decimalValue(tokenIs0 ? reserve1 : reserve0, 6);
+  const usdcReserve = decimalValue(tokenIs0 ? reserve1 : reserve0, quote.decimals);
   if (tokenReserve < 0 || usdcReserve < 0) return null;
   return { tokenReserve, usdcReserve };
 }
@@ -66,13 +88,15 @@ export function latestSyncReserves(logs: RadarAddressLog[], pair: RadarPair, tok
 }
 
 export function swapDirection(log: RadarAddressLog, pair: RadarPair): "buy" | "sell" | null {
+  const quote = quoteForPair(pair);
+  if (!quote) return null;
   if (!log.decoded?.method_call?.startsWith("Swap(")) return null;
   try {
     const amount0In = BigInt(logParameter(log, "amount0In") ?? "0");
     const amount1In = BigInt(logParameter(log, "amount1In") ?? "0");
     const amount0Out = BigInt(logParameter(log, "amount0Out") ?? "0");
     const amount1Out = BigInt(logParameter(log, "amount1Out") ?? "0");
-    const tokenIs0 = pair.token0.toLowerCase() !== ARC_TESTNET_USDC_ADDRESS;
+    const tokenIs0 = pair.token0.toLowerCase() !== quote.address.toLowerCase();
     if (tokenIs0 && amount0In > 0n && amount1Out > 0n) return "sell";
     if (tokenIs0 && amount1In > 0n && amount0Out > 0n) return "buy";
     if (!tokenIs0 && amount1In > 0n && amount0Out > 0n) return "sell";
@@ -84,11 +108,13 @@ export function swapDirection(log: RadarAddressLog, pair: RadarPair): "buy" | "s
 }
 
 export function swapUsdcValue(log: RadarAddressLog, pair: RadarPair): number {
+  const quote = quoteForPair(pair);
+  if (!quote || !log.decoded?.method_call?.startsWith("Swap(")) return 0;
   try {
-    const usdcIs0 = pair.token0.toLowerCase() === ARC_TESTNET_USDC_ADDRESS;
+    const usdcIs0 = pair.token0.toLowerCase() === quote.address.toLowerCase();
     const amountIn = BigInt(logParameter(log, usdcIs0 ? "amount0In" : "amount1In") ?? "0");
     const amountOut = BigInt(logParameter(log, usdcIs0 ? "amount0Out" : "amount1Out") ?? "0");
-    return Number(amountIn + amountOut) / 1_000_000;
+    return Number(amountIn + amountOut) / 10 ** quote.decimals;
   } catch {
     return 0;
   }

@@ -1,12 +1,15 @@
 # Arc Hackathon Export
 
-Circle Arc Testnet workspace for deploying and exercising audited-style payment
+Circle Arc Testnet workspace for deploying and exercising experimental payment
 and product-flow contracts with MetaMask-signed transactions.
 
 The repository also includes ARCROW (Arc Meme Intelligence), a read-only market intelligence
-interface for new Arc Testnet token pools. It turns ArcScan data into USDC pool
-prices, liquidity movement, trading flow, holder concentration, wallet signals,
-and exit-pressure estimates without requesting a wallet connection.
+interface for selected Arc Testnet token pools. It shows indexed trades, calculated
+USDC reserve prices, liquidity changes, holder coverage, and evidence-linked
+observations without requesting a wallet connection. It is not a whole-chain
+scanner, safety rating, or trade recommendation. Mainnet is not enabled.
+Light/dark/system themes and English/Korean/Japanese core UI labels are supported;
+some detailed descriptions remain English. See [data coverage](circle/arc/ARCROW_DATA.md).
 
 ## Scope
 
@@ -29,7 +32,8 @@ are intentionally excluded.
 ## Local Use
 
 ```powershell
-npm install
+npm ci --ignore-scripts
+npm run hooks:install
 npm.cmd run cycle:prepare
 npm.cmd run start-deployer
 ```
@@ -42,7 +46,8 @@ flows you want to demonstrate.
 The existing [Merchant Console](https://arc-hackathon-export.vercel.app/) remains
 the main demo. [ARCROW](https://arc-hackathon-export.vercel.app/circle/arc/public/arc-radar.html)
 is an additional market intelligence page. It runs in the browser and reads
-public ArcScan API data directly; no local server, wallet, or API key is required.
+public ArcScan API data directly, with optional user-initiated, read-only Arc RPC
+state snapshots; no local server, wallet, or API key is required.
 Market coverage and freshness depend on the public testnet indexer.
 
 The public deployment includes same-origin Vercel proxy routes for the Circle
@@ -75,3 +80,8 @@ npm.cmd run typecheck
 Secrets are not included. Keep Circle API keys, entity secrets, private keys,
 wallet IDs, and operator-specific deployment addresses in a local `.env` only.
 Use `.env.example` as a placeholder template.
+
+Run `npm run check:push` before release. The local pre-push hook and GitHub Security
+CI check dependency advisories, SDK compatibility, TypeScript, ARCROW/public-release
+tests, and compilation of the existing demo contracts. These checks are not an
+independent contract audit. See [Security Policy](SECURITY.md).

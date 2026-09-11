@@ -2,9 +2,16 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { createReadStream, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { handleArcInvoiceApi } from "./arcinvoice-api.js";
-import "./demo-checklist.js";
+import { buildProxyTarget } from "./proxy-target.js";
+
+const radarOnly = process.env.ARC_RADAR_ONLY === "1";
+
+if (!radarOnly) {
+  await import("./demo-checklist.js");
+}
 
 const root = process.cwd();
+const publicRoot = path.resolve(root, "circle", "arc", "public");
 const port = Number(process.env.PORT ?? "4173");
 
 const mimeTypes: Record<string, string> = {
@@ -17,13 +24,16 @@ const mimeTypes: Record<string, string> = {
 
 function resolvePath(urlPath: string): string {
   const safePath = decodeURIComponent(urlPath.split("?")[0] ?? "/").replace(/^\/+/, "");
-  let requested = safePath === "" ? "circle/arc/public/arc-invoice.html" : safePath;
+  let requested = safePath === "" ? "arc-radar.html" : safePath;
   if (requested.startsWith("public/")) {
-    requested = path.join("circle", "arc", requested);
+    requested = requested.slice("public/".length);
+  } else if (requested.startsWith("circle/arc/public/")) {
+    requested = requested.slice("circle/arc/public/".length);
   }
 
-  const resolved = path.resolve(root, requested);
-  if (!resolved.startsWith(root)) {
+  const resolved = path.resolve(publicRoot, requested);
+  const relative = path.relative(publicRoot, resolved);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
     throw new Error("Invalid path");
   }
   return resolved;
@@ -40,9 +50,7 @@ async function readRequestBody(req: IncomingMessage): Promise<Buffer> {
 }
 
 async function proxyExternalApi(req: IncomingMessage, res: ServerResponse, prefix: string, baseUrl: string): Promise<void> {
-  const incomingUrl = new URL(req.url ?? "/", `http://localhost:${port}`);
-  const targetPath = incomingUrl.pathname.replace(new RegExp(`^${prefix}`), "");
-  const targetUrl = new URL(targetPath + incomingUrl.search, baseUrl);
+  const targetUrl = buildProxyTarget(req.url ?? "/", prefix, baseUrl, port);
   const body = await readRequestBody(req);
   const requestBody = body.length > 0 ? new Blob([new Uint8Array(body)]) : undefined;
 
@@ -66,7 +74,13 @@ async function proxyExternalApi(req: IncomingMessage, res: ServerResponse, prefi
 
 const server = createServer((req, res) => {
   try {
-    if ((req.url ?? "").startsWith("/api/arcinvoice")) {
+    if (new URL(req.url ?? "/", `http://localhost:${port}`).pathname === "/") {
+      res.writeHead(302, { location: "/public/arc-radar.html" });
+      res.end();
+      return;
+    }
+
+    if (!radarOnly && (req.url ?? "").startsWith("/api/arcinvoice")) {
       void handleArcInvoiceApi(req, res).catch((error) => {
         res.writeHead(500, { "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: error instanceof Error ? error.message : "ArcInvoice API failed" }));
@@ -74,7 +88,7 @@ const server = createServer((req, res) => {
       return;
     }
 
-    if ((req.url ?? "").startsWith("/circle-api/")) {
+    if (!radarOnly && (req.url ?? "").startsWith("/circle-api/")) {
       void proxyExternalApi(req, res, "/circle-api", "https://api.circle.com").catch((error) => {
         res.writeHead(502, { "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: error instanceof Error ? error.message : "Proxy failed" }));
@@ -82,7 +96,7 @@ const server = createServer((req, res) => {
       return;
     }
 
-    if ((req.url ?? "").startsWith("/circle-iris-sandbox/")) {
+    if (!radarOnly && (req.url ?? "").startsWith("/circle-iris-sandbox/")) {
       void proxyExternalApi(req, res, "/circle-iris-sandbox", "https://iris-api-sandbox.circle.com").catch((error) => {
         res.writeHead(502, { "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: error instanceof Error ? error.message : "Proxy failed" }));
@@ -90,7 +104,7 @@ const server = createServer((req, res) => {
       return;
     }
 
-    if ((req.url ?? "").startsWith("/circle-iris/")) {
+    if (!radarOnly && (req.url ?? "").startsWith("/circle-iris/")) {
       void proxyExternalApi(req, res, "/circle-iris", "https://iris-api.circle.com").catch((error) => {
         res.writeHead(502, { "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: error instanceof Error ? error.message : "Proxy failed" }));
@@ -98,7 +112,7 @@ const server = createServer((req, res) => {
       return;
     }
 
-    if ((req.url ?? "").startsWith("/circle-gateway-testnet/")) {
+    if (!radarOnly && (req.url ?? "").startsWith("/circle-gateway-testnet/")) {
       void proxyExternalApi(req, res, "/circle-gateway-testnet", "https://gateway-api-testnet.circle.com").catch((error) => {
         res.writeHead(502, { "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: error instanceof Error ? error.message : "Proxy failed" }));
@@ -106,7 +120,7 @@ const server = createServer((req, res) => {
       return;
     }
 
-    if ((req.url ?? "").startsWith("/circle-gateway/")) {
+    if (!radarOnly && (req.url ?? "").startsWith("/circle-gateway/")) {
       void proxyExternalApi(req, res, "/circle-gateway", "https://gateway-api.circle.com").catch((error) => {
         res.writeHead(502, { "content-type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ error: error instanceof Error ? error.message : "Proxy failed" }));
@@ -132,6 +146,6 @@ const server = createServer((req, res) => {
   }
 });
 
-server.listen(port, () => {
+server.listen(port, "127.0.0.1", () => {
   console.log(`Deployer ready at http://localhost:${port}`);
 });

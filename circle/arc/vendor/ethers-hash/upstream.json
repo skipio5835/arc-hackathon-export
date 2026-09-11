@@ -1,0 +1,27 @@
+{
+  "name": "@ethersproject/hash",
+  "version": "5.8.0",
+  "resolved": "https://registry.npmjs.org/@ethersproject/hash/-/hash-5.8.0.tgz",
+  "integrity": "sha512-ac/lBcTbEWW/VGJij0CNSw/wPcw9bSRgCB0AIBz8CvED/jfvDoV9hsIIiWfvWmFEi8RcXtlNwp2jv6ozWOsooA==",
+  "normalization": "CRLF to LF",
+  "files": {
+    "lib.esm/_version.js": "3c1c5ab23e15fc2553812fd3959cbd65e7c322889fcd9ed992d22c323136173c",
+    "lib.esm/ens-normalize/decoder.js": "c4acce6940e998cef50ef9b32b98035769138dde75032e0a99200860927cca03",
+    "lib.esm/ens-normalize/include.js": "e4ddefaa54fdb0daa353052441879c2f7d55daf409892acf488a335f7ac7e177",
+    "lib.esm/ens-normalize/lib.js": "1d06f5f784a5e7d62c6841059db3d71f220f5a8913ebb64eff7437241f0cbf43",
+    "lib.esm/id.js": "4d1f58529154fb4c2ff469043ca3b7f657163f625a06783d3c722a08bcce44bf",
+    "lib.esm/index.js": "880d4bd11e0db1b0c2c86d3d88c383503ea9178c08c0fdb883d20ad81ff6f341",
+    "lib.esm/message.js": "98f2e31c0713621d84d5a7bce88bec519a7b0dbc248fa86f09012895af718559",
+    "lib.esm/namehash.js": "825936ed44c5c6541a76ce70597c3e62fb27a68ef12e504370f34ab76e15004f",
+    "lib.esm/typed-data.js": "2cf876e3969256feb13a61bdee803ea733d687c905aeabe1e9e535a4f2f8829f",
+    "lib/_version.js": "1b4c59d6f22608c820728aeaccf6719497681edc8ce53a1a9c1d40f1a91e2775",
+    "lib/ens-normalize/decoder.js": "78090fd536d5bb4e99425ee96ca2374f31fa808de55706f1ec3a6c804b239da0",
+    "lib/ens-normalize/include.js": "6d92b51ce776db85d0cf6e20c44db6841305b7e165a3ef199cc4659f0facd9e0",
+    "lib/ens-normalize/lib.js": "2f608a9d4cd82e8a2399d4b455d62f31b2eccc326f7dc571fcc4aa90b01b1a4a",
+    "lib/id.js": "024a4321c798222be4fd3210e046a156722fe326c444d4af8f9cb4dc372983bf",
+    "lib/index.js": "fbd14370c2b9a5c0fc6a7149a5b94e3b323abe388a865a8c88c20ce4855b3ea6",
+    "lib/message.js": "34c366b2205735276ef15795aaca63565f4122acf0067a404b25a5ca5a4e69f6",
+    "lib/namehash.js": "2b222e679d9be07162398fce9a020651d581ac20bbade040f07f0da2a5f0b6c0",
+    "lib/typed-data.js": "6a9626980f3d130c45e10ffaddd74ad6525603c209ca4a6b7b6e3939aaac588f"
+  }
+}

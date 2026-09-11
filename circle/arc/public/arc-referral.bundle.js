@@ -1,4 +1,4 @@
-﻿var process = globalThis.process || { version: "v20.0.0", env: {}, browser: true };
+var process = globalThis.process || { version: "v20.0.0", env: {}, browser: true };
 var global = globalThis;
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -6,11 +6,20 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __esm = (fn, res) => function __init() {
-  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+var __esm = (fn, res, err) => function __init() {
+  if (err) throw err[0];
+  try {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  } catch (e) {
+    throw err = [e], e;
+  }
 };
 var __commonJS = (cb, mod3) => function __require() {
-  return mod3 || (0, cb[__getOwnPropNames(cb)[0]])((mod3 = { exports: {} }).exports, mod3), mod3.exports;
+  try {
+    return mod3 || (0, cb[__getOwnPropNames(cb)[0]])((mod3 = { exports: {} }).exports, mod3), mod3.exports;
+  } catch (e) {
+    throw mod3 = 0, e;
+  }
 };
 var __export = (target, all) => {
   for (var name in all)
@@ -7183,9 +7192,9 @@ function wNAF(c, bits) {
      * Creates a wNAF precomputation window. Used for caching.
      * Default window size is set by `utils.precompute()` and is equal to 8.
      * Number of precomputed points depends on the curve size:
-     * 2^(?몜??) * (Math.ceil(?몳 / ?몜) + 1), where:
-     * - ?몜 is the window size
-     * - ?몳 is the bitlength of the curve order.
+     * 2^(𝑊−1) * (Math.ceil(𝑛 / 𝑊) + 1), where:
+     * - 𝑊 is the window size
+     * - 𝑛 is the bitlength of the curve order.
      * For a 256-bit curve and window size 8, the number of precomputed points is 128 * 33 = 4224.
      * @param elm Point instance
      * @param W window size
@@ -7747,7 +7756,7 @@ function weierstrassPoints(opts) {
     }
     // Converts Projective point to affine (x, y) coordinates.
     // Can accept precomputed Z^-1 - for example, from invertBatch.
-    // (x, y, z) ??(x=x/z, y=y/z)
+    // (x, y, z) ∋ (x=x/z, y=y/z)
     toAffine(iz) {
       return toAffineMemo(this, iz);
     }
@@ -19462,9 +19471,9 @@ function wNAF2(c, bits) {
      * Creates a wNAF precomputation window. Used for caching.
      * Default window size is set by `utils.precompute()` and is equal to 8.
      * Number of precomputed points depends on the curve size:
-     * 2^(?몜??) * (Math.ceil(?몳 / ?몜) + 1), where:
-     * - ?몜 is the window size
-     * - ?몳 is the bitlength of the curve order.
+     * 2^(𝑊−1) * (Math.ceil(𝑛 / 𝑊) + 1), where:
+     * - 𝑊 is the window size
+     * - 𝑛 is the bitlength of the curve order.
      * For a 256-bit curve and window size 8, the number of precomputed points is 128 * 33 = 4224.
      * @param elm Point instance
      * @param W window size
@@ -20125,7 +20134,7 @@ function weierstrassPoints2(opts) {
     }
     // Converts Projective point to affine (x, y) coordinates.
     // Can accept precomputed Z^-1 - for example, from invertBatch.
-    // (x, y, z) ??(x=x/z, y=y/z)
+    // (x, y, z) ∋ (x=x/z, y=y/z)
     toAffine(iz) {
       return toAffineMemo(this, iz);
     }

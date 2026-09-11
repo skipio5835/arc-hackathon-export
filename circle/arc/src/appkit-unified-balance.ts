@@ -115,8 +115,17 @@ function routeGatewayApisThroughLocalProxy(): void {
 
 routeGatewayApisThroughLocalProxy();
 
+function createWalletAdapter(provider: WalletProvider) {
+  return createViemAdapterFromProvider({
+    provider,
+    capabilities: {
+      supportedChains: [ArcTestnet, BaseSepolia, EthereumSepolia],
+    },
+  });
+}
+
 const kit = new AppKit();
-let adapter: Awaited<ReturnType<typeof createViemAdapterFromProvider>> | null = null;
+let adapter: Awaited<ReturnType<typeof createWalletAdapter>> | null = null;
 let walletProvider: WalletProvider | null = null;
 let address = "";
 
@@ -314,12 +323,7 @@ async function connect(): Promise<void> {
 
     address = accounts[0] ?? "";
     assertExpectedAccount(address);
-    adapter = await createViemAdapterFromProvider({
-      provider,
-      capabilities: {
-        supportedChains: [ArcTestnet, BaseSepolia, EthereumSepolia],
-      },
-    });
+    adapter = await createWalletAdapter(provider);
 
     el.sender.value = address;
     for (const button of [el.refresh, el.deposit, el.checkBalance, el.estimateSpend, el.spend]) {

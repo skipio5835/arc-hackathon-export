@@ -2,9 +2,16 @@
   "name": "arc-hackathon-export",
   "version": "1.0.0",
   "description": "Arc Testnet Circle Contracts deployment scripts",
+  "workspaces": ["circle/arc/vendor/ethers-hash", "circle/arc/vendor/jayson-browser"],
   "scripts": {
     "build-arc-radar": "node circle/arc/scripts/build-browser.mjs arc-radar",
-    "test-arc-radar": "tsx --test circle/arc/test/arc-radar-core.test.ts",
+    "test-arc-radar": "tsx --test circle/arc/test/arc-radar-core.test.ts circle/arc/test/arc-radar-dex.test.ts circle/arc/test/arc-radar-ads.test.ts circle/arc/test/arc-radar-navigation.test.ts circle/arc/test/arc-radar-market-tools.test.ts circle/arc/test/arc-radar-quality.test.ts circle/arc/test/arc-radar-evidence.test.ts circle/arc/test/arc-radar-authority.test.ts circle/arc/test/arc-radar-theme.test.ts circle/arc/test/arc-radar-i18n.test.ts",
+    "test-security-js": "tsx --test circle/arc/test/server-security.test.ts circle/arc/test/public-release.test.ts",
+    "test-dependency-security": "node --test circle/arc/test/dependency-security.test.mjs",
+    "test-pre-push": "node --test circle/arc/test/pre-push.test.mjs",
+    "hooks:install": "node circle/arc/scripts/install-git-hooks.mjs",
+    "check:push": "npm ls --all && npm audit --audit-level=low && npm run test-dependency-security && npm run test-pre-push && npm run typecheck && npm run test-arc-radar && npm run test-security-js && npm run compile-custom",
+    "start-arc-radar": "npm run build-arc-radar && cross-env ARC_RADAR_ONLY=1 tsx circle/arc/scripts/serve-deployer.ts",
     "generate-entity-secret": "tsx circle/arc/scripts/generate-entity-secret.ts",
     "register-entity-secret": "tsx --env-file-if-exists=.env circle/arc/scripts/register-entity-secret.ts",
     "compile-custom": "tsx circle/arc/scripts/compile-custom-contracts.ts",
@@ -80,18 +87,31 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@circle-fin/adapter-viem-v2": "^1.11.2",
-    "@circle-fin/app-kit": "^1.7.0",
-    "@circle-fin/developer-controlled-wallets": "^10.6.0",
-    "@circle-fin/smart-contract-platform": "^10.6.0",
+    "@circle-fin/adapter-viem-v2": "^1.17.0",
+    "@circle-fin/app-kit": "^1.13.0",
+    "@circle-fin/developer-controlled-wallets": "^10.8.0",
+    "@circle-fin/smart-contract-platform": "^10.8.0",
+    "@ethersproject/hash": "5.8.0-arcrow.1",
     "@openzeppelin/contracts": "^5.6.1",
     "ethers": "^6.16.0",
+    "jayson": "4.3.0-arcrow.1",
     "viem": "^2.52.2"
   },
   "devDependencies": {
     "@types/node": "^25.9.2",
-    "solc": "^0.8.35",
+    "cross-env": "^10.1.0",
+    "solc": "0.8.35",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "@coral-xyz/anchor": { "toml": "4.2.0" },
+    "@ethersproject/abi": { "@ethersproject/hash": "$@ethersproject/hash" },
+    "@solana/web3.js": { "jayson": "$jayson" },
+    "axios": "1.20.0",
+    "esbuild": "0.28.2",
+    "form-data": "4.0.6",
+    "solc": { "tmp": "0.2.7" },
+    "ws": "8.21.0"
   }
 }

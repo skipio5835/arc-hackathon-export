@@ -2,6 +2,8 @@ import esbuild from "esbuild";
 import fs from "node:fs";
 import path from "node:path";
 import { builtinModules } from "node:module";
+import { randomUUID } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 
 const root = process.cwd();
 const builtins = new Set([...builtinModules, ...builtinModules.map((name) => `node:${name}`)]);
@@ -160,7 +162,7 @@ function resolveExports(exportsField, subpath) {
     if (!subpath.startsWith(prefix) || !subpath.endsWith(suffix ?? "")) continue;
     const wildcard = subpath.slice(prefix.length, subpath.length - (suffix?.length ?? 0));
     const target = pickExportTarget(value);
-    if (target) return target.replace("*", wildcard);
+    if (target) return target.replaceAll("*", wildcard);
   }
 
   return subpath === "." ? pickExportTarget(exportsField) : undefined;
@@ -315,7 +317,7 @@ async function buildTarget(name) {
   }
 
   const [entry, outfile] = target;
-  await esbuild.build({
+  const result = await esbuild.build({
     stdin: {
       contents: fs.readFileSync(path.join(root, entry), "utf8"),
       sourcefile: entry,
@@ -331,9 +333,36 @@ var global = globalThis;`,
     },
     inject: [path.join(root, "circle", "arc", "scripts", "browser-buffer-global.js")],
     outfile,
+    write: false,
     plugins: [localFsPlugin],
     logLevel: "info",
   });
+
+  const outputPath = path.join(root, outfile);
+  const output = result.outputFiles[0].text;
+  const normalized = output.replace(/[ \t]+$/gm, "");
+  if (fs.existsSync(outputPath) && fs.readFileSync(outputPath, "utf8") === normalized) {
+    console.log(`Unchanged: ${outfile}`);
+    return;
+  }
+
+  // Avoid truncating mapped files on Windows and preserve the previous bundle on failure.
+  const temporaryPath = `${outputPath}.${randomUUID()}.tmp`;
+  try {
+    fs.writeFileSync(temporaryPath, normalized, { flag: "wx" });
+    for (let attempt = 0; ; attempt++) {
+      try {
+        fs.renameSync(temporaryPath, outputPath);
+        break;
+      } catch (error) {
+        if (attempt >= 5 || !["EBUSY", "EPERM", "EACCES"].includes(error.code)) throw error;
+        await delay(200 * (attempt + 1));
+      }
+    }
+  } finally {
+    fs.rmSync(temporaryPath, { force: true });
+  }
+  console.log(`Built: ${outfile}`);
 }
 
 const requested = process.argv.slice(2);

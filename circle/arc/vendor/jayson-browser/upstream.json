@@ -1,0 +1,11 @@
+{
+  "name": "jayson",
+  "version": "4.3.0",
+  "resolved": "https://registry.npmjs.org/jayson/-/jayson-4.3.0.tgz",
+  "integrity": "sha512-AauzHcUcqs8OBnCHOkJY280VaTiCm57AbuO7lqzcw7JapGj50BisE3xhksye4zlTSR1+1tAz67wLTl8tEH1obQ==",
+  "normalization": "CRLF to LF",
+  "files": {
+    "lib/client/browser/index.js": "8f7e43e1f40a3b106cbb23ba158e0888b0d3c5fa7330b0e3fc2bb318ce9e726a",
+    "lib/generateRequest.js": "35581da7a5fb407477419f5c20f5507034beca27fbba2be7cf7871931c795bea"
+  }
+}
